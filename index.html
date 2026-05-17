@@ -742,6 +742,12 @@
       text-align: center;
     }
 
+
+    .dnotam-blue-note {
+      color: var(--cyan) !important;
+      font-weight: 900;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1573,7 +1579,7 @@
                 + '<div class="pirep-step-list">'
                 + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Enter the airport identifier in the search box above.</p></div>'
                 + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Call the highlighted approach control and relay the new NOTAM number.</p></div>'
-                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">If the approach is closed, no further action is required.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text dnotam-blue-note">If the approach is closed, no action is required.</p></div>'
                 + '</div>'
                 + '</section>';
               box.style.display = "block";
