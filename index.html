@@ -684,6 +684,17 @@
       text-align: left;
     }
 
+
+    .omic-removal-warning {
+      color: var(--red) !important;
+      font-weight: 800;
+    }
+
+    .omic-command {
+      color: var(--cyan);
+      font-weight: 900;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1474,6 +1485,35 @@
                 + '<div class="clearance-step"><span class="clearance-step-number">*</span><div><p class="clearance-step-text">Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p></div></div>'
                 + '</div>'
                 + '</section>';
+              box.style.display = "block";
+              return;
+            }
+
+            if (section === "FLIGHT PLAN AMENDMENT") {
+              box.innerHTML = ''
+                + '<div class="omic-reference-grid">'
+                + '<section class="omic-reference-panel">'
+                + '<h3>Amendments</h3>'
+                + '<div class="omic-reference-subheader">ERAM Entry</div>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text"><strong>Proposed Time:</strong> <span class="omic-command">/AM CID 7 P####</span></p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text"><strong>AC Registration:</strong> <span class="omic-command">/AM CID REG/ N#####</span></p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">3</span><p class="pirep-step-text"><strong>Requested Altitude:</strong> <span class="omic-command">/AM CID RAL ###</span></p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text"><strong>Other Requests:</strong> Advise dispatch you will remove it so they can re-file.</p></div>'
+                + '</div>'
+                + '</section>'
+                + '<section class="omic-reference-panel">'
+                + '<h3>Removal</h3>'
+                + '<div class="omic-reference-subheader">ERAM Entry</div>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Dispatch requests removal of strip/flight by callsign.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text"><span class="omic-command">"FR"</span> the callsign to confirm it is on file.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">3</span><p class="pirep-step-text">Acknowledge that we will remove it.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">4</span><p class="pirep-step-text"><span class="omic-command">"RS CID"</span> then enter <span class="omic-command">"Y"</span> to the prompt to remove.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text omic-removal-warning">Do not remove the flight plan if the prompt says the flight is active.</p></div>'
+                + '</div>'
+                + '</section>'
+                + '</div>';
               box.style.display = "block";
               return;
             }
