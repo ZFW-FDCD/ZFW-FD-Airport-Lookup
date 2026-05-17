@@ -518,6 +518,24 @@
       font-size: 1.3125rem !important;
     }
 
+
+    .omic-reference-panel.single {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .omic-reference-panel p {
+      margin: 0 0 14px;
+      color: var(--text);
+      font-size: 1.3125rem;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .omic-reference-panel p:last-child {
+      margin-bottom: 0;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1285,6 +1303,19 @@
                 + '</ul>'
                 + '</section>'
                 + '</div>';
+              box.style.display = "block";
+              return;
+            }
+
+            if (section === "CLEARANCE DELIVERY") {
+              box.innerHTML = ''
+                + '<section class="omic-reference-panel single">'
+                + '<h3>Clearance Delivery</h3>'
+                + '<p>Upon receiving a request for IFR clearance from a pilot, enter the airport identifier in the search bar above.</p>'
+                + '<p>Transfer the call to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</p>'
+                + '<p>Once the sector has taken the call, you may drop the line.</p>'
+                + '<p>Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p>'
+                + '</section>';
               box.style.display = "block";
               return;
             }
