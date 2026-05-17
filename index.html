@@ -404,13 +404,34 @@
 
     .omic-green-highlight {
       border-color: var(--green) !important;
-      box-shadow: 0 0 0 3px rgba(65, 209, 125, 0.32), 0 0 18px rgba(65, 209, 125, 0.30) !important;
     }
 
     .omic-green-highlight .card-title,
     .omic-green-highlight .card-value,
     .omic-green-text {
       color: var(--green) !important;
+    }
+
+
+    @keyframes zfwGreenPulseGlow {
+      0%, 100% {
+        box-shadow:
+          0 0 0 2px rgba(65, 209, 125, 0.28),
+          0 0 10px rgba(65, 209, 125, 0.22);
+      }
+
+      50% {
+        box-shadow:
+          0 0 0 5px rgba(65, 209, 125, 0.58),
+          0 0 26px rgba(65, 209, 125, 0.56);
+      }
+    }
+
+    .omic-green-highlight,
+    .fdcs-green-highlight,
+    .nearest-wx-highlight {
+      border-color: var(--green) !important;
+      animation: zfwGreenPulseGlow 2.2s ease-in-out infinite !important;
     }
 
     .omic-red-highlight {
@@ -1325,7 +1346,7 @@
         card.classList.add("omic-green-highlight");
         value.style.color = "var(--green)";
         card.style.borderColor = "var(--green)";
-        card.style.boxShadow = "0 0 0 3px rgba(65, 209, 125, 0.32), 0 0 18px rgba(65, 209, 125, 0.30)";
+        card.style.boxShadow = "";
         if (title) title.style.color = "var(--green)";
       }
 

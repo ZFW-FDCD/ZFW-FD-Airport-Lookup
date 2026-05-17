@@ -291,7 +291,7 @@
     if(on){
       card.classList.add("nearest-wx-highlight");
       card.style.borderColor = "var(--green)";
-      card.style.boxShadow = "0 0 0 3px rgba(65,209,125,.32),0 0 18px rgba(65,209,125,.30)";
+      card.style.boxShadow = "";
     } else {
       card.classList.remove("nearest-wx-highlight");
       card.style.borderColor = "";
@@ -303,7 +303,7 @@
     if(document.getElementById("nearestWxHighlightStyle")) return;
     const style = document.createElement("style");
     style.id = "nearestWxHighlightStyle";
-    style.textContent = `.nearest-wx-highlight{border-color:var(--green)!important;box-shadow:0 0 0 3px rgba(65,209,125,.32),0 0 18px rgba(65,209,125,.30)!important}.nearest-wx-highlight .card-title,.nearest-wx-highlight .card-value{color:var(--green)!important}`;
+    style.textContent = `@keyframes zfwNearestWxPulseGlow{0%,100%{box-shadow:0 0 0 2px rgba(65,209,125,.28),0 0 10px rgba(65,209,125,.22)}50%{box-shadow:0 0 0 5px rgba(65,209,125,.58),0 0 26px rgba(65,209,125,.56)}}.nearest-wx-highlight{border-color:var(--green)!important;animation:zfwNearestWxPulseGlow 2.2s ease-in-out infinite!important}.nearest-wx-highlight .card-title,.nearest-wx-highlight .card-value{color:var(--green)!important}`;
     document.head.appendChild(style);
   }
 

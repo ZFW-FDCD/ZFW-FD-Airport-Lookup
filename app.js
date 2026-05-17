@@ -22,8 +22,8 @@ function militaryToMinutes(t){const h=Number(t.slice(0,2)),m=Number(t.slice(2));
 function dayAllowed(d,n){const x=n.getDay();if(d==="ALL")return true;if(d==="M-F")return x>=1&&x<=5;if(d==="SU")return x===0;return true}
 function isOpen(hours){const w=parseHours(hours);if(!w.length)return false;const n=new Date(),cur=n.getHours()*60+n.getMinutes();return w.some(([d,s,e])=>{if(!dayAllowed(d,n))return false;const sm=militaryToMinutes(s),em=militaryToMinutes(e);return em>=sm?(cur>=sm&&cur<=em):(cur>=sm||cur<=em)})}
 function setText(id,v){els[id].textContent=v||"—"}
-function clearClasses(){Object.values(cards).forEach(c=>{c.classList.remove("primary");c.style.background="";c.style.borderColor="";c.style.boxShadow=""});Object.values(els).forEach(e=>{e.classList.remove("red-text","green-text","amber-text","cyan-text");e.style.color=""})}
-function highlightFdcsCard(id,color){const card=cards[id],el=els[id];if(!card||!el)return;if(color==="red"){card.style.borderColor="var(--red)";card.style.boxShadow="0 0 0 3px rgba(255,75,75,.28),0 0 18px rgba(255,75,75,.24)";el.classList.add("red-text");return}card.style.borderColor="var(--green)";card.style.boxShadow="0 0 0 3px rgba(65,209,125,.32),0 0 18px rgba(65,209,125,.30)";el.classList.add("green-text")}
+function clearClasses(){Object.values(cards).forEach(c=>{c.classList.remove("primary","fdcs-green-highlight");c.style.background="";c.style.borderColor="";c.style.boxShadow=""});Object.values(els).forEach(e=>{e.classList.remove("red-text","green-text","amber-text","cyan-text");e.style.color=""})}
+function highlightFdcsCard(id,color){const card=cards[id],el=els[id];if(!card||!el)return;if(color==="red"){card.style.borderColor="var(--red)";card.style.boxShadow="0 0 0 3px rgba(255,75,75,.28),0 0 18px rgba(255,75,75,.24)";el.classList.add("red-text");return}card.style.borderColor="var(--green)";card.style.boxShadow="";card.classList.add("fdcs-green-highlight");el.classList.add("green-text")}
 
 function appKey(appName){
   return String(appName||"").toUpperCase().replace(/\s+APP\b/,"").split(/\s+/)[0].replace(/[^A-Z0-9]/g,"");
