@@ -536,6 +536,25 @@
       margin-bottom: 0;
     }
 
+
+    .omic-reference-panel.single ul {
+      margin: 0;
+      padding-left: 28px;
+      color: var(--text);
+      font-size: 1.3125rem;
+      line-height: 1.25;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .omic-reference-panel.single li {
+      margin-bottom: 12px;
+    }
+
+    .omic-reference-panel.single li:last-child {
+      margin-bottom: 0;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1311,10 +1330,12 @@
               box.innerHTML = ''
                 + '<section class="omic-reference-panel single">'
                 + '<h3>Clearance Delivery</h3>'
-                + '<p>Upon receiving a request for IFR clearance from a pilot, enter the airport identifier in the search bar above.</p>'
-                + '<p>Transfer the call to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</p>'
-                + '<p>Once the sector has taken the call, you may drop the line.</p>'
-                + '<p>Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p>'
+                + '<ul>'
+                + '<li>Upon receiving a request for IFR clearance from a pilot, enter the airport identifier in the search bar above.</li>'
+                + '<li>Transfer the call to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</li>'
+                + '<li>Once the sector has taken the call, you may drop the line.</li>'
+                + '<li>Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</li>'
+                + '</ul>'
                 + '</section>';
               box.style.display = "block";
               return;
