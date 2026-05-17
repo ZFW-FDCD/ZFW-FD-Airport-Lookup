@@ -555,6 +555,84 @@
       margin-bottom: 0;
     }
 
+
+    .clearance-flow {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .clearance-step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border: 1px solid rgba(96, 165, 250, 0.34);
+      border-radius: 16px;
+      background: rgba(96, 165, 250, 0.07);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .clearance-step-number {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(96, 165, 250, 0.16);
+      border: 2px solid var(--cyan);
+      color: var(--cyan);
+      font-weight: 900;
+      font-size: 1.05rem;
+      line-height: 1;
+      box-shadow: 0 0 12px rgba(96, 165, 250, 0.18);
+    }
+
+    .clearance-step-title {
+      margin: 0 0 5px;
+      color: var(--cyan);
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      text-transform: uppercase;
+    }
+
+    .clearance-step-text {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.12rem;
+      line-height: 1.25;
+      font-weight: 750;
+      text-align: left;
+    }
+
+    .clearance-step.emphasis {
+      border-color: rgba(65, 209, 125, 0.44);
+      background: rgba(65, 209, 125, 0.07);
+    }
+
+    .clearance-step.emphasis .clearance-step-number {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(65, 209, 125, 0.14);
+      box-shadow: 0 0 12px rgba(65, 209, 125, 0.22);
+    }
+
+
+    .clearance-keyword {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    @media(max-width: 900px) {
+      .clearance-flow {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1330,12 +1408,12 @@
               box.innerHTML = ''
                 + '<section class="omic-reference-panel single">'
                 + '<h3>Clearance Delivery</h3>'
-                + '<ul>'
-                + '<li>Upon receiving a request for IFR clearance from a pilot, enter the airport identifier in the search bar above.</li>'
-                + '<li>Transfer the call to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</li>'
-                + '<li>Once the sector has taken the call, you may drop the line.</li>'
-                + '<li>Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</li>'
-                + '</ul>'
+                + '<div class="clearance-flow">'
+                + '<div class="clearance-step"><span class="clearance-step-number">1</span><div><div class="clearance-step-title">Search</div><p class="clearance-step-text">Upon receiving a request for IFR clearance from a pilot, <span class="clearance-keyword">enter the airport identifier</span> in the search bar above.</p></div></div>'
+                + '<div class="clearance-step emphasis"><span class="clearance-step-number">2</span><div><div class="clearance-step-title">Transfer</div><p class="clearance-step-text"><span class="clearance-keyword">Transfer the call</span> to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</p></div></div>'
+                + '<div class="clearance-step"><span class="clearance-step-number">3</span><div><div class="clearance-step-title">Drop Line</div><p class="clearance-step-text">Once the sector has taken the call, you may <span class="clearance-keyword">drop the line.</span></p></div></div>'
+                + '<div class="clearance-step"><span class="clearance-step-number">4</span><div><div class="clearance-step-title">Alternate Method</div><p class="clearance-step-text">Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p></div></div>'
+                + '</div>'
                 + '</section>';
               box.style.display = "block";
               return;
