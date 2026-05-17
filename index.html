@@ -635,6 +635,22 @@
       }
     }
 
+
+    .pirep-keyword-aisr {
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .pirep-keyword-erids {
+      color: var(--amber);
+      font-weight: 900;
+    }
+
+    .pirep-keyword-eram {
+      color: var(--red);
+      font-weight: 900;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1387,7 +1403,7 @@
                 + '<h3>Routine PIREP (UA)</h3>'
                 + '<div class="omic-reference-subheader">AISR Entry</div>'
                 + '<ul>'
-                + '<li>Enter the PIREP into the AISR fields as received through ERIDS. Airports can be entered as the 3 letter identifier. Do not add radial/dme to the METAR field.</li>'
+                + '<li>Enter the PIREP into the <span class="pirep-keyword-aisr">AISR</span> fields as received through <span class="pirep-keyword-erids">ERIDS</span>. Airports can be entered as the 3/4 letter identifier.</li>'
                 + '<li>Use the search function if the controller used a navaid/waypoint in the PIREP to show the nearest weather station needed for the METAR field. Do not add radial/dme to the search bar.</li>'
                 + '<li>Use "Tab" key to move to next line.</li>'
                 + '</ul>'
@@ -1396,7 +1412,7 @@
                 + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">Urgent PIREP (UUA)</h3>'
                 + '<div class="omic-reference-subheader urgent omic-urgent-subheader" style="color: var(--red) !important; text-decoration: none !important;">ERAM Entry</div>'
                 + '<ul>'
-                + '<li>When a new Urgent PIREP is received, click on the message in AISR to display the info.</li>'
+                + '<li>When a new Urgent PIREP is received, click on the message in <span class="pirep-keyword-aisr">AISR</span> to display the info.</li>'
                 + '<li>Enter the Urgent PIREP as displayed into the UUA GI message template in ERAM.</li>'
                 + '<li>Press the "Insert" key to swap between replacing/moving characters during input.</li>'
                 + '</ul>'
