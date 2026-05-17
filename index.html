@@ -651,6 +651,29 @@
       font-weight: 900;
     }
 
+
+    .pirep-step-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .pirep-step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .pirep-step-text {
+      margin: 2px 0 0;
+      color: var(--text);
+      font-size: 1.3125rem;
+      line-height: 1.18;
+      font-weight: 700;
+      text-align: left;
+    }
+
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -1402,20 +1425,20 @@
                 + '<section class="omic-reference-panel">'
                 + '<h3>Routine PIREP (UA)</h3>'
                 + '<div class="omic-reference-subheader">AISR Entry</div>'
-                + '<ul>'
-                + '<li>Enter the PIREP into the <span class="pirep-keyword-aisr">AISR</span> fields as received through <span class="pirep-keyword-erids">ERIDS</span>. Airports can be entered as the 3/4 letter identifier.</li>'
-                + '<li>Use the search function if the controller used a navaid/waypoint in the PIREP to show the nearest weather station needed for the METAR field. Do not add radial/dme to the search bar.</li>'
-                + '<li>Use "Tab" key to move to next line.</li>'
-                + '</ul>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Enter the PIREP into the <span class="pirep-keyword-aisr">AISR</span> fields as received through <span class="pirep-keyword-erids">ERIDS</span>. Airports can be entered as the 3/4 letter identifier.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Use the search function if the controller used a navaid/waypoint in the PIREP to show the nearest weather station needed for the METAR field. Do not add radial/dme to the search bar.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">Use "Tab" key to move to next line.</p></div>'
+                + '</div>'
                 + '</section>'
                 + '<section class="omic-reference-panel">'
                 + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">Urgent PIREP (UUA)</h3>'
                 + '<div class="omic-reference-subheader urgent omic-urgent-subheader" style="color: var(--red) !important; text-decoration: none !important;">ERAM Entry</div>'
-                + '<ul>'
-                + '<li>When a new Urgent PIREP is received, click on the message in <span class="pirep-keyword-aisr">AISR</span> to display the info.</li>'
-                + '<li>Enter the Urgent PIREP as displayed into the UUA GI message template in ERAM.</li>'
-                + '<li>Press the "Insert" key to swap between replacing/moving characters during input.</li>'
-                + '</ul>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">When a new Urgent PIREP is received, click on the message in <span class="pirep-keyword-aisr">AISR</span> to display the info.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Enter the Urgent PIREP as displayed into the UUA GI message template in <span class="pirep-keyword-eram">ERAM</span>.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">Press the "Insert" key to swap between replacing/moving characters during input.</p></div>'
+                + '</div>'
                 + '</section>'
                 + '</div>';
               box.style.display = "block";
@@ -1430,7 +1453,7 @@
                 + '<div class="clearance-step"><span class="clearance-step-number">1</span><div><p class="clearance-step-text">Upon receiving a request for IFR clearance from a pilot, <span class="clearance-keyword">enter the airport identifier</span> in the search bar above.</p></div></div>'
                 + '<div class="clearance-step"><span class="clearance-step-number">2</span><div><p class="clearance-step-text"><span class="clearance-keyword">Transfer the call</span> to the displayed sector by pressing "Transfer" then entering #### (Internal number + sector number).</p></div></div>'
                 + '<div class="clearance-step"><span class="clearance-step-number">3</span><div><p class="clearance-step-text">Once the sector has taken the call, you may <span class="clearance-keyword">drop the line.</span></p></div></div>'
-                + '<div class="clearance-step"><span class="clearance-step-number">4</span><div><p class="clearance-step-text">Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p></div></div>'
+                + '<div class="clearance-step"><span class="clearance-step-number">*</span><div><p class="clearance-step-text">Alternatively, call the sector and copy down the relayed clearance info, then relay it to the pilot verbatim.</p></div></div>'
                 + '</div>'
                 + '</section>';
               box.style.display = "block";
