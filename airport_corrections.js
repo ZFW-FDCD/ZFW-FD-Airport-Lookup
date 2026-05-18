@@ -82,6 +82,12 @@
     "POS32": "POS 32",
     "32": "POS 32",
 
+    "ACTL": "ACT 96",
+    "ACT L": "ACT 96",
+    "ACT-L": "ACT 96",
+    "ACT96": "ACT 96",
+    "96": "ACT 96",
+
     "TXKL": "TXK 27",
     "TXK L": "TXK 27",
     "TXK-L": "TXK 27",
@@ -97,20 +103,21 @@
 
   const SECTOR_TO_AREA = {
     "LBB 64": "RDR",
+    "POS 32": "RDR",
+    "MAF 40": "JEN",
+    "ABI 63": "JEN",
+    "EDN 62": "JEN",
+    "ACT 96": "DAL",
+    "UIM 83": "DAL",
+    "TXK 27": "DAL",
     "SPS 34": "UKW",
     "OKC 35": "UKW",
     "UKW 75": "UKW",
-    "ABI 63": "JEN",
-    "EDN 62": "JEN",
-    "MAF 40": "JEN",
-    "SEA 37": "BYP",
-    "MLC 38": "BYP",
     "FRI 53": "BYP",
-    "UIM 83": "BYP",
-    "DON 29": "DAL",
-    "POS 32": "DAL",
-    "TXK 27": "BYP",
-    "MLU 30": "BYP"
+    "MLC 38": "BYP",
+    "SEA 37": "BYP",
+    "DON 29": "CQY",
+    "MLU 30": "CQY"
   };
 
   function getRecords() {
@@ -141,6 +148,28 @@
 
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase();
+  }
+
+  function getFormValue(form, names) {
+    const list = Array.isArray(names) ? names : [names];
+    for (const name of list) {
+      const byElements = form.elements ? form.elements[name] : null;
+      const element = byElements || form.querySelector('[name="' + name + '"]');
+      if (element && typeof element.value !== "undefined") return element.value || "";
+    }
+    return "";
+  }
+
+  function setFormValue(form, names, value) {
+    const list = Array.isArray(names) ? names : [names];
+    for (const name of list) {
+      const byElements = form.elements ? form.elements[name] : null;
+      const element = byElements || form.querySelector('[name="' + name + '"]');
+      if (element && typeof element.value !== "undefined") {
+        element.value = value || "";
+        return;
+      }
+    }
   }
 
   function aliasForIdent(ident) {
@@ -262,16 +291,16 @@
   }
 
   function makeRecordFromForm(form) {
-    const ident = normalizeIdent(form.identifier.value);
-    const sectors = normalizeSectors(form.sectors.value);
-    const areas = normalizeAreas(form.areas.value, sectors);
-    const apps = normalizeApps(form.apps.value);
-    const vscs = splitList(form.vscs.value);
-    const contacts = splitList(form.contacts.value);
-    const hours = splitList(form.hours.value);
+    const ident = normalizeIdent(getFormValue(form, "identifier"));
+    const sectors = normalizeSectors(getFormValue(form, ["sectors", "sector"]));
+    const areas = normalizeAreas(getFormValue(form, ["areas", "area"]), sectors);
+    const apps = normalizeApps(getFormValue(form, ["apps", "app", "approach"]));
+    const vscs = splitList(getFormValue(form, "vscs"));
+    const contacts = splitList(getFormValue(form, ["contacts", "contact"]));
+    const hours = splitList(getFormValue(form, "hours"));
 
-    const latText = form.lat.value.trim();
-    const lonText = form.lon.value.trim();
+    const latText = String(getFormValue(form, "lat") || "").trim();
+    const lonText = String(getFormValue(form, "lon") || "").trim();
 
     const record = {
       record_type: "AIRPORT",
@@ -281,19 +310,16 @@
       vscs,
       contacts,
       hours,
-      airport_name: form.airportName.value.trim()
+      airport_name: String(getFormValue(form, "airportName") || "").trim()
     };
 
     if (latText !== "") {
       const latValue = Number(latText);
-      if (Number.isFinite(latValue)) record.lat = Math.round(latValue * 10000) / 10000;
-      else record.lat = NaN;
+      record.lat = Number.isFinite(latValue) ? Math.round(latValue * 10000) / 10000 : NaN;
     }
-
     if (lonText !== "") {
       const lonValue = Number(lonText);
-      if (Number.isFinite(lonValue)) record.lon = Math.round(lonValue * 10000) / 10000;
-      else record.lon = NaN;
+      record.lon = Number.isFinite(lonValue) ? Math.round(lonValue * 10000) / 10000 : NaN;
     }
 
     return { ident, record };
@@ -335,6 +361,25 @@
     });
   }
 
+
+  function applyBuiltInAirportCorrections() {
+    const luvBase = {
+      record_type: "AIRPORT",
+      sectors: ["LBB 64"],
+      areas: ["RDR"],
+      apps: [],
+      vscs: [],
+      contacts: [],
+      hours: [],
+      airport_name: "Lamesa Municipal Airport",
+      lat: 32.7563,
+      lon: -101.9202
+    };
+
+    applyOneCorrection("KLUV", luvBase);
+    applyOneCorrection("LUV", luvBase);
+  }
+
   function showMessage(message, isError) {
     const existing = document.getElementById("correctionMessage");
     if (!existing) return;
@@ -344,15 +389,17 @@
   }
 
   function fillFormFromRecord(form, ident, record) {
-    form.identifier.value = ident || "";
-    form.airportName.value = record.airport_name || "";
-    form.sectors.value = (record.sectors || []).join(", ");
-    form.areas.value = (record.areas || []).join(", ");
-    form.apps.value = (record.apps || []).join(", ");
-    form.vscs.value = (record.vscs || []).join(", ");
-    form.contacts.value = (record.contacts || []).join(", ");
-    form.hours.value = (record.hours || []).join(", ");
-
+    record = record || {};
+    setFormValue(form, "identifier", ident || "");
+    setFormValue(form, "airportName", record.airport_name || "");
+    setFormValue(form, ["sectors", "sector"], (record.sectors || []).join(", "));
+    setFormValue(form, ["areas", "area"], (record.areas || []).join(", "));
+    setFormValue(form, ["apps", "app", "approach"], (record.apps || []).join(", "));
+    setFormValue(form, "vscs", (record.vscs || []).join(", "));
+    setFormValue(form, ["contacts", "contact"], (record.contacts || []).join(", "));
+    setFormValue(form, "hours", (record.hours || []).join(", "));
+    setFormValue(form, "lat", Number.isFinite(Number(record.lat)) ? String(record.lat) : "");
+    setFormValue(form, "lon", Number.isFinite(Number(record.lon)) ? String(record.lon) : "");
   }
 
   function clearForm(form) {
@@ -373,7 +420,7 @@
     clearForm(form);
     showMessage("", false);
 
-    form.dataset.mode = mode || "combined";
+    form.dataset.mode = "combined";
     title.textContent = "Add/Amend Airport";
     submitButton.textContent = "Save Airport";
 
@@ -383,7 +430,7 @@
       if (found) {
         fillFormFromRecord(form, found.ident, found.record);
       } else {
-        form.identifier.value = currentIdent;
+        setFormValue(form, "identifier", currentIdent);
       }
     }
 
@@ -408,31 +455,7 @@
     input.focus();
   }
 
-  window.ZFW_OPEN_AIRPORT_CORRECTION_MODAL = function () {
-    openModal("combined");
-  };
-
-  function bindAirportCorrectionButton() {
-    const button = document.getElementById("amendAirportButton");
-    if (button && button.dataset.airportCorrectionBound !== "true") {
-      button.dataset.airportCorrectionBound = "true";
-
-      const handler = function (event) {
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        openModal("combined");
-      };
-
-      button.addEventListener("pointerdown", handler, true);
-      button.addEventListener("click", handler, true);
-    }
-  }
-
   function createCorrectionUi() {
-    bindAirportCorrectionButton();
-
     if (document.getElementById("correctionModal")) return;
 
     const style = document.createElement("style");
@@ -566,13 +589,19 @@
     `;
     document.head.appendChild(style);
 
-    const tools = document.getElementById("correctionTools");
-    if (tools && !document.getElementById("amendAirportButton")) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.id = "amendAirportButton";
-      button.textContent = "Add/Amend Airport";
-      tools.appendChild(button);
+    let tools = document.getElementById("correctionTools");
+    if (!tools) {
+      tools = document.createElement("div");
+      tools.id = "correctionTools";
+      tools.className = "correction-tools";
+      tools.innerHTML = `
+        <button type="button" id="amendAirportButton">Add/Amend Airport</button>
+      `;
+
+      const searchRow = document.querySelector(".search-row");
+      if (searchRow) {
+        searchRow.appendChild(tools);
+      }
     }
 
     const modal = document.createElement("div");
@@ -584,7 +613,7 @@
         <h2 id="correctionModalTitle">Airport Correction</h2>
         <p>Add or amend a local airport record. Separate multiple sectors, apps, VSCS entries, contacts, or hours with commas.</p>
 
-        <form id="correctionForm">
+        <form id="correctionForm" novalidate>
           <div class="correction-grid">
             <div class="correction-field">
               <label for="corrIdentifier">Airport Identifier</label>
@@ -600,6 +629,7 @@
             <div class="correction-field">
               <label for="corrSectors">Sector</label>
               <input id="corrSectors" name="sectors" type="text" placeholder="LBB L, LBB-L, LBB 64, or 64" />
+              <div class="correction-help">Common shorthand is accepted and normalized.</div>
             </div>
 
             <div class="correction-field">
@@ -621,6 +651,7 @@
             <div class="correction-field full">
               <label for="corrContacts">APP Contact / Notes</label>
               <textarea id="corrContacts" name="contacts" placeholder="Phone Number and Additional Info (Do Not Enter Military Approach Control Numbers)"></textarea>
+              <div class="correction-help">Phone Number and Additional Info (Do Not Enter Military Approach Control Numbers)</div>
             </div>
 
             <div class="correction-field">
@@ -672,6 +703,16 @@
       if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") closeModal();
     });
 
+    const correctionSubmitButton = document.getElementById("correctionSubmit");
+    const correctionForm = document.getElementById("correctionForm");
+    if (correctionSubmitButton && correctionForm && correctionSubmitButton.dataset.forceSubmitBound !== "true") {
+      correctionSubmitButton.dataset.forceSubmitBound = "true";
+      correctionSubmitButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        correctionForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      });
+    }
+
     document.getElementById("correctionForm").addEventListener("submit", function (event) {
       event.preventDefault();
 
@@ -684,12 +725,9 @@
       }
 
       if (Number.isNaN(record.lat) || Number.isNaN(record.lon)) {
-        showMessage("Latitude and longitude must be valid numbers when entered. APP, contact, and hours fields may be left blank when none apply.", true);
+        showMessage("Latitude and longitude must be valid numbers when entered. APP, contact, VSCS, and hours may be left blank when none apply.", true);
         return;
       }
-
-      const records = getRecords();
-      const exists = Boolean(lookupRecord(ident));
 
       const corrections = loadCorrections();
       corrections[ident] = record;
@@ -720,6 +758,7 @@
   }
 
   applySavedCorrections();
+  applyBuiltInAirportCorrections();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", createCorrectionUi);
@@ -743,21 +782,6 @@
     if (!window.AIRPORT_DATA) window.AIRPORT_DATA = { records: {} };
     if (!window.AIRPORT_DATA.records) window.AIRPORT_DATA.records = {};
     return window.AIRPORT_DATA.records;
-  }
-
-  function isAirportRecord(record) {
-    if (!record) return false;
-
-    const type = String(record.record_type || record.type || "").toUpperCase();
-    if (type === "AIRPORT") return true;
-    if (["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type)) return false;
-
-    return Boolean(
-      (Array.isArray(record.sectors) && record.sectors.length) ||
-      (Array.isArray(record.apps) && record.apps.length) ||
-      (Array.isArray(record.vscs) && record.vscs.length) ||
-      (Array.isArray(record.hours) && record.hours.length)
-    );
   }
 
   function getNavData() {
@@ -843,7 +867,7 @@
     form.recordType.value = record.record_type || "WAYPOINT";
     form.nearestWx.value = record.nearest_wx || "";
 
-    if (form.notes) form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
+    form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
   }
 
   function makePirepRecordFromForm(form) {
@@ -864,52 +888,28 @@
     return { ident, record };
   }
 
-  function currentSearchOrStatusIdent() {
-    const input = document.getElementById("airportInput");
-    const fromInput = normalizeIdent(input ? input.value : "");
-
-    if (fromInput) {
-      return fromInput;
-    }
-
-    const status = document.getElementById("status");
-    const statusText = status ? String(status.textContent || "").trim().toUpperCase() : "";
-    const statusMatch = statusText.match(/^([A-Z0-9]{3,5})\s+(?:NOT\s+FOUND|FOUND)\b/);
-
-    return statusMatch ? normalizeIdent(statusMatch[1]) : "";
-  }
-
   function openPirepModal() {
     const modal = document.getElementById("pirepNavModal");
     const form = document.getElementById("pirepNavForm");
+    const input = document.getElementById("airportInput");
 
     clearPirepForm(form);
     showPirepMessage("", false);
 
-    const currentIdent = currentSearchOrStatusIdent();
-
+    const currentIdent = normalizeIdent(input ? input.value : "");
     if (currentIdent) {
       const existing = findExistingRecord(currentIdent);
-
-      if (existing && !isAirportRecord(existing)) {
+      if (existing) {
         fillPirepForm(form, currentIdent, existing);
         showPirepMessage("Existing waypoint/navaid loaded. Saving will replace the old data.", false);
       } else {
         form.identifier.value = currentIdent;
-        form.recordType.value = currentIdent.length === 5 ? "WAYPOINT" : "NAVAID";
-        showPirepMessage("New waypoint/navaid ready to add. Enter the nearest weather reporting station and save.", false);
       }
     }
 
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("correction-modal-open");
-    setTimeout(function () {
-      if (form.identifier.value && !form.nearestWx.value) {
-        form.nearestWx.focus();
-      } else {
-        form.identifier.focus();
-      }
-    }, 0);
+    setTimeout(function () { form.identifier.focus(); }, 0);
   }
 
   function closePirepModal() {
@@ -934,48 +934,19 @@
     input.focus();
   }
 
-  function reopenOrCreatePirepModal() {
-    if (!document.getElementById("pirepNavModal")) {
-      createPirepUi();
-    }
-
-    openPirepModal();
-  }
-
-  function bindPirepNavButton() {
-    const button = document.getElementById("addPirepNavButton");
-    if (button && button.dataset.pirepNavBound !== "true") {
-      button.dataset.pirepNavBound = "true";
-
-      const handler = function (event) {
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        reopenOrCreatePirepModal();
-      };
-
-      button.addEventListener("pointerdown", handler, true);
-      button.addEventListener("click", handler, true);
-    }
-  }
-
   function createPirepUi() {
-    const tools = document.getElementById("correctionTools");
-    let button = document.getElementById("addPirepNavButton");
+    if (document.getElementById("addPirepNavButton")) return;
 
-    if (tools && !button) {
-      button = document.createElement("button");
+    const tools = document.getElementById("correctionTools");
+    if (tools) {
+      const button = document.createElement("button");
       button.type = "button";
       button.id = "addPirepNavButton";
       button.className = "secondary";
       button.textContent = "Add/Amend Waypoint/Navaid for PIREP";
       tools.appendChild(button);
+      button.addEventListener("click", openPirepModal);
     }
-
-    bindPirepNavButton();
-
-    if (document.getElementById("pirepNavModal")) return;
 
     const modal = document.createElement("div");
     modal.id = "pirepNavModal";
@@ -1073,11 +1044,6 @@ const corrections = loadCorrections();
       setTimeout(closePirepModal, 700);
     });
   }
-
-  window.ZFW_OPEN_PIREP_NAV_MODAL = function () {
-    createPirepUi();
-    openPirepModal();
-  };
 
   applySavedPirepCorrections();
 
@@ -1192,7 +1158,9 @@ const corrections = loadCorrections();
 
   const LOW_SECTORS = [
     "",
-    "MAF 40", "LBB 64", "ABI 63", "EDN 62", "SPS 34", "OKC 35", "UKW 75", "POS 32", "ACT 96", "FRI 53", "MLC 38", "SEA 37", "UIM 83", "TXK 27", "DON 29", "MLU 30"
+    "ABI 20", "ADM 21", "BYP 35", "CQY 39", "DAL 29", "DON 29",
+    "FUZ 38", "GGG 37", "GNP 46", "JEN 56", "LBBL 64", "MLU 31",
+    "RDR 66", "SJT 41", "SPS 34", "TXK 27", "UKW 48"
   ];
 
   const AREAS = ["", "DAL", "CQY", "BYP", "JEN", "UKW", "RDR"];
@@ -1313,30 +1281,14 @@ const corrections = loadCorrections();
 
 
   function areaFromSectorValue(sectorValue) {
-    const sector = String(sectorValue || "").toUpperCase().trim();
-
-    // Operational area mapping. Area names are the six ZFW areas;
-    // they are not airport identifiers or sector identifiers.
-    const sectorAreaMap = {
-      "LBB 64": "RDR",
-      "POS 32": "RDR",
-      "MAF 40": "JEN",
-      "ABI 63": "JEN",
-      "EDN 62": "JEN",
-      "ACT 96": "DAL",
-      "UIM 83": "DAL",
-      "TXK 27": "DAL",
-      "SPS 34": "UKW",
-      "OKC 35": "UKW",
-      "UKW 75": "UKW",
-      "FRI 53": "BYP",
-      "MLC 38": "BYP",
-      "SEA 37": "BYP",
-      "DON 29": "CQY",
-      "MLU 30": "CQY"
-    };
-
-    return sectorAreaMap[sector] || "";
+    const sector = String(sectorValue || "").toUpperCase();
+    if (sector.includes("LBB") || sector.includes("POS")) return "RDR";
+    if (sector.includes("MAF") || sector.includes("ABI") || sector.includes("EDN")) return "JEN";
+    if (sector.includes("ACT") || sector.includes("UIM") || sector.includes("TXK")) return "DAL";
+    if (sector.includes("SPS") || sector.includes("OKC") || sector.includes("UKW")) return "UKW";
+    if (sector.includes("FRI") || sector.includes("MLC") || sector.includes("SEA")) return "BYP";
+    if (sector.includes("DON") || sector.includes("MLU")) return "CQY";
+    return "";
   }
 
   function ensureDerivedAreaField(form) {
@@ -1440,217 +1392,3 @@ const corrections = loadCorrections();
   }
 })();
 
-
-
-/* Static correction button binding safety net */
-(function () {
-  "use strict";
-
-  function bindStaticCorrectionButtons() {
-    const airportButton = document.getElementById("amendAirportButton");
-    if (airportButton && airportButton.dataset.airportCorrectionBound !== "true" && typeof openModal === "function") {
-      airportButton.dataset.airportCorrectionBound = "true";
-      airportButton.addEventListener("click", function () { openModal("combined"); });
-    }
-
-    const pirepButton = document.getElementById("addPirepNavButton");
-    if (pirepButton && pirepButton.dataset.pirepNavBound !== "true" && typeof openPirepModal === "function") {
-      pirepButton.dataset.pirepNavBound = "true";
-
-      const pirepHandler = function (event) {
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        openPirepModal();
-      };
-
-      pirepButton.addEventListener("pointerdown", pirepHandler, true);
-      pirepButton.addEventListener("click", pirepHandler, true);
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bindStaticCorrectionButtons);
-  } else {
-    bindStaticCorrectionButtons();
-  }
-
-  setTimeout(bindStaticCorrectionButtons, 250);
-  setTimeout(bindStaticCorrectionButtons, 750);
-  setTimeout(bindStaticCorrectionButtons, 1500);
-})();
-
-
-/* Highlight correction buttons when a searched item is not found */
-(function () {
-  "use strict";
-
-  const BUTTON_IDS = [
-    "amendAirportButton",
-    "addPirepNavButton",
-    "addNonZfwAirportButton"
-  ];
-
-  function ensureNotFoundHighlightStyle() {
-    if (document.getElementById("zfwNotFoundButtonHighlightStyle")) return;
-
-    const style = document.createElement("style");
-    style.id = "zfwNotFoundButtonHighlightStyle";
-    style.textContent = `
-      @keyframes zfwNotFoundButtonGlow {
-        0%, 100% {
-          outline-color: rgba(65, 209, 125, 0.55);
-          box-shadow:
-            0 0 0 2px rgba(65, 209, 125, 0.35),
-            0 0 10px rgba(65, 209, 125, 0.25),
-            inset 0 0 0 1px rgba(65, 209, 125, 0.30);
-        }
-
-        50% {
-          outline-color: rgba(65, 209, 125, 1);
-          box-shadow:
-            0 0 0 5px rgba(65, 209, 125, 0.60),
-            0 0 28px rgba(65, 209, 125, 0.70),
-            inset 0 0 0 2px rgba(65, 209, 125, 0.65);
-        }
-      }
-
-      #correctionTools button.zfw-not-found-action {
-        border: 2px solid var(--green) !important;
-        outline: 3px solid rgba(65, 209, 125, 0.85) !important;
-        outline-offset: 4px !important;
-        animation: zfwNotFoundButtonGlow 2.1s ease-in-out infinite !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function statusShowsNotFound() {
-    const status = document.getElementById("status");
-    const text = status ? String(status.textContent || "").trim().toUpperCase() : "";
-
-    return /^[A-Z0-9]{3,5}\s+NOT\s+FOUND\b/.test(text);
-  }
-
-  function zfwUpdateNotFoundButtonHighlight() {
-    ensureNotFoundHighlightStyle();
-
-    const on = statusShowsNotFound();
-
-    BUTTON_IDS.forEach(function (id) {
-      const button = document.getElementById(id);
-      if (button) {
-        button.classList.toggle("zfw-not-found-action", on);
-      }
-    });
-  }
-
-  function watchNotFoundStatus() {
-    zfwUpdateNotFoundButtonHighlight();
-
-    const status = document.getElementById("status");
-    if (status && !status.dataset.notFoundObserverAttached) {
-      status.dataset.notFoundObserverAttached = "true";
-
-      new MutationObserver(zfwUpdateNotFoundButtonHighlight).observe(status, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-    }
-
-    const input = document.getElementById("airportInput");
-    if (input && !input.dataset.notFoundButtonWatcherAttached) {
-      input.dataset.notFoundButtonWatcherAttached = "true";
-      ["input", "change", "blur"].forEach(function (eventName) {
-        input.addEventListener(eventName, function () {
-          setTimeout(zfwUpdateNotFoundButtonHighlight, 0);
-          setTimeout(zfwUpdateNotFoundButtonHighlight, 100);
-        });
-      });
-    }
-  }
-
-  window.zfwUpdateNotFoundButtonHighlight = zfwUpdateNotFoundButtonHighlight;
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", watchNotFoundStatus);
-  } else {
-    watchNotFoundStatus();
-  }
-
-  setTimeout(watchNotFoundStatus, 250);
-  setTimeout(watchNotFoundStatus, 750);
-  setInterval(zfwUpdateNotFoundButtonHighlight, 1000);
-})();
-
-
-/* Capture-level correction button opening so active search text cannot block buttons */
-(function () {
-  "use strict";
-
-  function openByButtonId(id) {
-    if (id === "amendAirportButton") {
-      if (typeof window.ZFW_OPEN_AIRPORT_CORRECTION_MODAL === "function") {
-        window.ZFW_OPEN_AIRPORT_CORRECTION_MODAL();
-        return true;
-      }
-    }
-
-    if (id === "addPirepNavButton") {
-      if (typeof window.ZFW_OPEN_PIREP_NAV_MODAL === "function") {
-        window.ZFW_OPEN_PIREP_NAV_MODAL();
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  function captureButtonPress(event) {
-    const button = event.target && event.target.closest
-      ? event.target.closest("#amendAirportButton, #addPirepNavButton")
-      : null;
-
-    if (!button) return;
-
-    if (openByButtonId(button.id)) {
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
-    }
-  }
-
-  document.addEventListener("pointerdown", captureButtonPress, true);
-  document.addEventListener("mousedown", captureButtonPress, true);
-  document.addEventListener("click", captureButtonPress, true);
-})();
-
-
-/* Self-heal static correction buttons if any script/state change replaces or unbinds them */
-(function () {
-  "use strict";
-
-  function zfwSelfHealCorrectionButtons() {
-    const airportButton = document.getElementById("amendAirportButton");
-    if (airportButton && typeof window.ZFW_OPEN_AIRPORT_CORRECTION_MODAL === "function") {
-      airportButton.disabled = false;
-      airportButton.style.pointerEvents = "auto";
-    }
-
-    const pirepButton = document.getElementById("addPirepNavButton");
-    if (pirepButton && typeof window.ZFW_OPEN_PIREP_NAV_MODAL === "function") {
-      pirepButton.disabled = false;
-      pirepButton.style.pointerEvents = "auto";
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", zfwSelfHealCorrectionButtons);
-  } else {
-    zfwSelfHealCorrectionButtons();
-  }
-
-  setInterval(zfwSelfHealCorrectionButtons, 500);
-})();
