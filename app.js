@@ -13,7 +13,7 @@ const input=document.getElementById("airportInput"),statusEl=document.getElement
 const els={sector:document.getElementById("sector"),area:document.getElementById("area"),approach:document.getElementById("approach"),vscs:document.getElementById("vscs"),contact:document.getElementById("contact"),hours:document.getElementById("hours"),airportName:document.getElementById("airportName")};
 const cards={sector:document.getElementById("sectorCard"),area:document.getElementById("areaCard"),approach:document.getElementById("approachCard"),vscs:document.getElementById("vscsCard"),contact:document.getElementById("contactCard"),hours:document.getElementById("hoursCard"),airportName:document.getElementById("airportNameCard")};
 function normalizeSearch(v){const s=(v||"").trim().toUpperCase();return(s.length===3&&/^[A-Z]+$/.test(s))?"K"+s:s}
-function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{3}$/.test(s)||/^K[A-Z0-9]{3}$/.test(s)||/^[A-Z0-9]{5}$/.test(s)}
+function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{3}$/.test(s)||/^K[A-Z0-9]{3}$/.test(s)||/^[A-Z0-9]{4}$/.test(s)||/^[A-Z0-9]{5}$/.test(s)}
 function splitLines(items){return(!items||!items.length)?"":items.filter(Boolean).join("\n")}
 function formatSectorNameFirstToNumberFirst(value){const text=String(value||"").trim();const match=text.match(/^([A-Z]{2,4})\s+(\d{2})$/);return match?`${match[2]} ${match[1]}`:text}
 function splitSectorLines(items){return(!items||!items.length)?"":items.filter(Boolean).map(formatSectorNameFirstToNumberFirst).join("\n")}
@@ -94,6 +94,7 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
 function scheduleClear(){if(clearTimer)clearTimeout(clearTimer);clearTimer=setTimeout(()=>{input.value="";input.focus()},1000)}
 function updateResults(){
+  if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
   const raw=input.value,upper=raw.toUpperCase();
   if(raw!==upper)input.value=upper;
 
