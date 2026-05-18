@@ -245,6 +245,9 @@
       if (SECTOR_ALIASES[key]) return SECTOR_ALIASES[key];
     }
 
+    const lNumberFormat = upper.match(/^([A-Z]{2,4})[\s-]*L[\s-]*(\d{2})$/);
+    if (lNumberFormat) return lNumberFormat[1] + " " + lNumberFormat[2];
+
     const sectorFormat = upper.match(/^([A-Z]{2,4})[\s-]*(\d{2})$/);
     if (sectorFormat) return sectorFormat[1] + " " + sectorFormat[2];
 
@@ -1195,9 +1198,22 @@ const corrections = loadCorrections();
 
   const LOW_SECTORS = [
     "",
-    "ABI 20", "ADM 21", "BYP 35", "CQY 39", "DAL 29", "DON 29",
-    "FUZ 38", "GGG 37", "GNP 46", "JEN 56", "LBBL 64", "MLU 31",
-    "RDR 66", "SJT 41", "SPS 34", "TXK 27", "UKW 48"
+    "MAF-L 40",
+    "LBB-L 64",
+    "ABI-L 63",
+    "EDN-L 62",
+    "SPS-L 34",
+    "OKC-L 35",
+    "UKW-L 75",
+    "POS-L 32",
+    "ACT-L 96",
+    "FRI-L 53",
+    "MLC-L 38",
+    "SEA-L 37",
+    "UIM-L 83",
+    "DON-L 29",
+    "MLU-L 30",
+    "TXK-L 27"
   ];
 
   const AREAS = ["", "DAL", "CQY", "BYP", "JEN", "UKW", "RDR"];
@@ -1213,11 +1229,18 @@ const corrections = loadCorrections();
     return String(value || "").trim().toUpperCase();
   }
 
+  function sectorOptionKey(value) {
+    const text = String(value || "").trim().toUpperCase();
+    const match = text.match(/^([A-Z]{2,4})[\s-]*L?[\s-]*(\d{2})$/);
+    if (match) return match[1] + match[2];
+    return normalizeIdent(text);
+  }
+
   function optionHtml(values, selected) {
-    selected = normalizeIdent(selected);
+    const selectedKey = sectorOptionKey(selected);
     return values.map(function (value) {
       const label = value || "";
-      const sel = normalizeIdent(value) === selected ? " selected" : "";
+      const sel = sectorOptionKey(value) === selectedKey ? " selected" : "";
       return `<option value="${value}"${sel}>${label || "Select"}</option>`;
     }).join("");
   }
