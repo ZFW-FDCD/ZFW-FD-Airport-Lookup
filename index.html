@@ -350,6 +350,23 @@
       filter: brightness(0.92);
     }
 
+
+    .omic-quick-buttons button.omic-alnot-button {
+      background: #7f1d1d !important;
+      border: 2px solid rgba(255, 75, 75, 0.62) !important;
+      color: #ffffff !important;
+    }
+
+    .omic-quick-buttons button.omic-alnot-button:hover {
+      filter: brightness(1.12);
+    }
+
+    .omic-quick-buttons button.omic-alnot-button.active {
+      background: #450a0a !important;
+      border-color: rgba(255, 75, 75, 0.95) !important;
+      box-shadow: inset 0 0 0 2px rgba(15, 23, 42, 0.45), 0 0 16px rgba(255, 75, 75, 0.28) !important;
+    }
+
     #omicWipBox {
       display: none;
       margin-top: 16px;
@@ -742,12 +759,6 @@
       text-align: center;
     }
 
-
-    .dnotam-blue-note {
-      color: var(--cyan) !important;
-      font-weight: 900;
-    }
-
     @media(max-width: 800px) {
       .omic-reference-grid {
         grid-template-columns: 1fr;
@@ -833,7 +844,7 @@
         <button type="button" data-omic-wip="CLEARANCE DELIVERY">CLEARANCE DELIVERY</button>
         <button type="button" data-omic-wip="FLIGHT PLAN AMENDMENT">FLIGHT PLAN AMENDMENT</button>
         <button type="button" data-omic-wip="D-NOTAMs">D-NOTAMs</button>
-        <button type="button" data-omic-wip="ALNOT/INREQ">ALNOT/INREQ</button>
+        <button type="button" data-omic-wip="ALNOT" class="omic-alnot-button">ALNOT</button>
       </section>
 
       <div id="omicWipBox">WIP</div>
@@ -1579,7 +1590,28 @@
                 + '<div class="pirep-step-list">'
                 + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Enter the airport identifier in the search box above.</p></div>'
                 + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Call the highlighted approach control and relay the new NOTAM number.</p></div>'
-                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text dnotam-blue-note">If the approach is closed, no action is required.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">If the approach is closed, no further action is required.</p></div>'
+                + '</div>'
+                + '</section>';
+              box.style.display = "block";
+              return;
+            }
+
+            if (section === "ALNOT") {
+              box.innerHTML = ''
+                + '<section class="omic-reference-panel">'
+                + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">ALNOT</h3>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Search <span class="pirep-keyword-eram">"ALNOT"</span> in the "Flight Plan" tab in <span class="pirep-keyword-aisr">AISR</span>.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Click <span class="pirep-keyword-eram">"XX-ALNOT"</span>.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">3</span><p class="pirep-step-text">Fill in the aircraft information.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">4</span><p class="pirep-step-text">Click <span class="pirep-keyword-eram">"File"</span>.</p></div>'
+                + '</div>'
+                + '</section>'
+                + '<section class="omic-reference-panel">'
+                + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">ALNOT CANCELLATION</h3>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">WIP</p></div>'
                 + '</div>'
                 + '</section>';
               box.style.display = "block";
