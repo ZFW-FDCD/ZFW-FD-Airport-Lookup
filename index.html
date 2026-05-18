@@ -1599,6 +1599,7 @@
 
             if (section === "ALNOT") {
               box.innerHTML = ''
+                + '<div class="omic-reference-grid">'
                 + '<section class="omic-reference-panel">'
                 + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">ALNOT</h3>'
                 + '<div class="pirep-step-list">'
@@ -1609,11 +1610,12 @@
                 + '</div>'
                 + '</section>'
                 + '<section class="omic-reference-panel">'
-                + '<h3 class="urgent omic-urgent-header" style="color: var(--red) !important;">ALNOT CANCELLATION</h3>'
+                + '<h3>ALNOT CANCELLATION</h3>'
                 + '<div class="pirep-step-list">'
                 + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text">WIP</p></div>'
                 + '</div>'
-                + '</section>';
+                + '</section>'
+                + '</div>';
               box.style.display = "block";
               return;
             }
