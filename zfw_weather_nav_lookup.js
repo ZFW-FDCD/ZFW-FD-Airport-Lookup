@@ -453,8 +453,10 @@
     }
 
     if(!isCompleteLookupIdent(typedIdent)){
-      output.textContent = "—";
-      output.title = "";
+      if(!restoreLast(output)){
+        output.textContent = "—";
+        output.title = "";
+      }
       return;
     }
 
@@ -523,6 +525,37 @@
     }, 250);
 
     scheduleUpdate();
+  }
+
+
+  function updateNearestWeatherForIdent(identifier){
+    const input = document.getElementById("airportInput");
+    const output = document.getElementById("nearestWeather");
+    if(!output) return;
+
+    const typedIdent = normalizeIdent(identifier || (input ? input.value : ""));
+    if(!typedIdent || !isCompleteLookupIdent(typedIdent)) return;
+
+    const record = getRecord(typedIdent);
+
+    if(isSharedAirportNavIdent(typedIdent)){
+      const airportWx = airportWeatherIdForIdent(typedIdent);
+      output.textContent = airportWx;
+      output.title = "Airport identifier also serves as the weather reporting station.";
+      lastLookupIdent = typedIdent;
+      lastDisplayedWx = airportWx;
+      lastDisplayedTitle = output.title || "";
+      lastFoundWasNav = false;
+      lastFoundRecord = null;
+      setNearestHighlight(false);
+      hideMapForNav(null);
+      return;
+    }
+
+    const nearest = calculateNearest(record);
+    if(!nearest) return;
+
+    writeNearest(output, nearest, typedIdent, record);
   }
 
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;

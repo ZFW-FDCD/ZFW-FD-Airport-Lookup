@@ -193,6 +193,7 @@ function updateResults(){
 
   currentMarker={ident:query,lat:rec.lat,lon:rec.lon};
   drawMap();
+  if(window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT){window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT(typed)}
   scheduleClear(typed)
 }
 function pointInPolygon(point, polygon) {
