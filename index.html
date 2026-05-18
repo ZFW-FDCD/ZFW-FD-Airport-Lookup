@@ -778,12 +778,12 @@
 
 
     .dnotam-subheader {
-      margin: -8px 0 18px;
+      margin: 1px 0 0;
       color: var(--cyan) !important;
-      font-size: 1.35rem;
-      line-height: 1.2;
+      font-size: 1.3125rem;
+      line-height: 1.22;
       font-weight: 900;
-      text-align: center;
+      text-align: left;
       letter-spacing: 0.25px;
     }
 
@@ -1615,10 +1615,10 @@
                 + '<section class="omic-reference-panel single">'
                 + '<h3>D-NOTAMs</h3>'
                 + '<p class="dnotam-warning">Only relay safety pertinent D-NOTAMs (APT/RWY CLOSURE or OBST TOWER LGT)</p>'
-                + '<div class="dnotam-subheader">If the approach is closed, no action is required.</div>'
                 + '<div class="pirep-step-list">'
                 + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Enter the airport identifier in the search box above.</p></div>'
                 + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Call the highlighted approach control and relay the new NOTAM number.</p></div>'
+                + '<div class="pirep-step"><span class="clearance-step-number">*</span><p class="pirep-step-text dnotam-subheader">If the approach is closed, no action is required.</p></div>'
                 + '</div>'
                 + '</section>';
               box.style.display = "block";
