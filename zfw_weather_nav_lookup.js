@@ -11,7 +11,7 @@
 
   function isCompleteLookupIdent(ident){
     ident = normalizeIdent(ident);
-    return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
+    return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
   }
 
   function ensureAirportData(){
@@ -97,6 +97,11 @@
       if(records[ident]) return records[ident];
       if(records[kIdent]) return records[kIdent];
 
+      return null;
+    }
+
+    if(ident.length === 4){
+      if(records[ident]) return records[ident];
       return null;
     }
 
@@ -487,7 +492,14 @@
     writeNearest(output, nearest, typedIdent, record);
   }
 
-  function scheduleUpdate(){ [0,100,300,700,1200].forEach(t => setTimeout(updateNearestWeather, t)); }
+  function scheduleUpdate(){
+    const scheduledIdent = normalizeIdent(document.getElementById("airportInput")?.value || "");
+    [0,100,300,700,1200].forEach(t => setTimeout(() => {
+      const currentIdent = normalizeIdent(document.getElementById("airportInput")?.value || "");
+      if(scheduledIdent && currentIdent && currentIdent !== scheduledIdent) return;
+      updateNearestWeather();
+    }, t));
+  }
 
   function wire(){
     injectHighlightStyle();

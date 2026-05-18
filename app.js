@@ -60,6 +60,10 @@ function extractPhoneFromContact(text){
   const phone=str.match(/(\(\d{3}\)\s*\d{3}[-\s]?\d{4})/);
   return phone?phone[1].trim():"";
 }
+function departurePrefixFromContact(contact){
+  const match=String(contact||"").match(/\b([EW])\s*Dep\b/i);
+  return match?match[1].toUpperCase()+" Dep: ":"";
+}
 function buildApproachDetails(apps,vscs,contacts,hours){
   let anyOpen=false;
   let anyClosed=false;
@@ -72,14 +76,15 @@ function buildApproachDetails(apps,vscs,contacts,hours){
     const contact=findAppContactSegment(appName,contacts,index);
     const vscsValue=extractVscsFromContact(contact)||vscs[index]||"";
     const phoneValue=extractPhoneFromContact(contact)||extractPhoneFromContact(contacts[index]||"");
+    const displayAppName=departurePrefixFromContact(contact)+appName;
     if(open){
       anyOpen=true;
-      approachLines.push([appName,vscsValue?`VSCS: ${vscsValue}`:"",phoneValue?`CD Phone: ${phoneValue}`:""].filter(Boolean).join("\n"));
+      approachLines.push([displayAppName,vscsValue?`VSCS: ${vscsValue}`:"",phoneValue?`CD Phone: ${phoneValue}`:""].filter(Boolean).join("\n"));
       if(vscsValue)openVscs.push(vscsValue);
       if(phoneValue)openPhones.push(phoneValue);
     }else{
       anyClosed=true;
-      approachLines.push(`${appName} CLOSED`);
+      approachLines.push(`${displayAppName} CLOSED`);
     }
   });
   return {
@@ -92,7 +97,7 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 }
 
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
-function scheduleClear(){if(clearTimer)clearTimeout(clearTimer);clearTimer=setTimeout(()=>{input.value="";input.focus()},1000)}
+function scheduleClear(expectedIdent){if(clearTimer)clearTimeout(clearTimer);const expected=String(expectedIdent||"").trim().toUpperCase();clearTimer=setTimeout(()=>{const current=String(input.value||"").trim().toUpperCase();if(expected&&current!==expected)return;input.value="";input.focus()},1000)}
 function updateResults(){
   if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
   const raw=input.value,upper=raw.toUpperCase();
@@ -119,7 +124,7 @@ function updateResults(){
 
   if(!rec){
     if(window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
-      scheduleClear();
+      scheduleClear(typed);
       return;
     }
 
@@ -131,7 +136,7 @@ function updateResults(){
       setTimeout(window.zfwUpdateNotFoundButtonHighlight,150);
     }
 
-    scheduleClear();
+    scheduleClear(typed);
     return;
   }
 
@@ -188,7 +193,7 @@ function updateResults(){
 
   currentMarker={ident:query,lat:rec.lat,lon:rec.lon};
   drawMap();
-  scheduleClear()
+  scheduleClear(typed)
 }
 function pointInPolygon(point, polygon) {
   const [x, y] = point;

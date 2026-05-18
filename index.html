@@ -1052,7 +1052,7 @@
 
       function isCompleteOmicLookupInput(value) {
         const ident = normalizeOmicIdent(value);
-        return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
+        return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
       }
 
       function isNavRecord(record) {
@@ -1199,6 +1199,11 @@
         return phone ? phone[1].trim() : "";
       }
 
+      function omicDeparturePrefixFromContact(contact) {
+        const match = String(contact || "").match(/\b([EW])\s*Dep\b/i);
+        return match ? match[1].toUpperCase() + " Dep: " : "";
+      }
+
       function buildOmicApproachDetails(apps, vscs, contacts, hours) {
         let anyOpen = false;
         let anyClosed = false;
@@ -1210,13 +1215,14 @@
           const contact = findOmicAppContactSegment(appName, contacts, index);
           const vscsValue = extractOmicVscsFromContact(contact) || vscs[index] || "";
           const phoneValue = extractOmicPhoneFromContact(contact) || extractOmicPhoneFromContact(contacts[index] || "");
+          const displayAppName = omicDeparturePrefixFromContact(contact) + appName;
 
           if (open) {
             anyOpen = true;
-            approachLines.push([appName, vscsValue ? "VSCS: " + vscsValue : "", phoneValue ? "CD Phone: " + phoneValue : ""].filter(Boolean).join("\n"));
+            approachLines.push([displayAppName, vscsValue ? "VSCS: " + vscsValue : "", phoneValue ? "CD Phone: " + phoneValue : ""].filter(Boolean).join("\n"));
           } else {
             anyClosed = true;
-            approachLines.push(appName + " CLOSED");
+            approachLines.push(displayAppName + " CLOSED");
           }
         });
 

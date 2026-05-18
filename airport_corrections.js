@@ -418,6 +418,50 @@
       found.record.areas = ["JEN"];
       removeAppFromRecord(found.record, "LBB APP");
     });
+
+    ["COM", "KCOM"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["ABI 63"];
+      found.record.areas = ["JEN"];
+      found.record.apps = [];
+      found.record.vscs = [];
+      found.record.contacts = [];
+      found.record.hours = [];
+    });
+
+    const ewDepartureUpdates = {
+      apps: ["SHV APP", "GGG APP"],
+      vscs: ["351 (05)", "349 (03)"],
+      contacts: [
+        "E Dep: SHV APP VSCS 351 (05) TEL (318) 747-8519",
+        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4020"
+      ],
+      hours: ["E Dep SHV 0000-2359", "W Dep GGG 0600-2200"]
+    };
+
+    ["ASL", "KASL"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["MLU 30"];
+      found.record.areas = ["CQY"];
+      found.record.apps = ewDepartureUpdates.apps.slice();
+      found.record.vscs = ewDepartureUpdates.vscs.slice();
+      found.record.contacts = ewDepartureUpdates.contacts.slice();
+      found.record.hours = ewDepartureUpdates.hours.slice();
+    });
+
+    ["6F7"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.apps = ewDepartureUpdates.apps.slice();
+      found.record.vscs = ewDepartureUpdates.vscs.slice();
+      found.record.contacts = ewDepartureUpdates.contacts.slice();
+      found.record.hours = ewDepartureUpdates.hours.slice();
+    });
   }
 
   function showMessage(message, isError) {
@@ -799,6 +843,15 @@
 
   applySavedCorrections();
   applyBuiltInAirportCorrections();
+
+  let zfwBuiltInAirportCorrectionRuns = 0;
+  const zfwBuiltInAirportCorrectionTimer = setInterval(function () {
+    applyBuiltInAirportCorrections();
+    zfwBuiltInAirportCorrectionRuns += 1;
+    if (zfwBuiltInAirportCorrectionRuns >= 12) {
+      clearInterval(zfwBuiltInAirportCorrectionTimer);
+    }
+  }, 500);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", createCorrectionUi);
