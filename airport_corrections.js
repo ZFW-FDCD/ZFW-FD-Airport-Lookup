@@ -238,10 +238,22 @@
   }
 
   function normalizeApps(value) {
+    const noAppValues = new Set([
+      "N/A",
+      "NA",
+      "NONE",
+      "NO APP",
+      "NO APPROACH",
+      "NO APPROACH CONTROL",
+      "NIL",
+      "-",
+      "—"
+    ]);
+
     return dedupe(
       splitList(value).map((item) => {
         let app = item.toUpperCase().trim();
-        if (!app) return "";
+        if (!app || noAppValues.has(app)) return "";
         if (!app.endsWith("APP") && app !== "D10") app += " APP";
         if (app === "D10") app = "D10 APP";
         return app;
@@ -262,6 +274,7 @@
     const lonText = form.lon.value.trim();
 
     const record = {
+      record_type: "AIRPORT",
       sectors,
       areas,
       apps,
@@ -271,8 +284,17 @@
       airport_name: form.airportName.value.trim()
     };
 
-    if (latText !== "") record.lat = Math.round(Number(latText) * 10000) / 10000;
-    if (lonText !== "") record.lon = Math.round(Number(lonText) * 10000) / 10000;
+    if (latText !== "") {
+      const latValue = Number(latText);
+      if (Number.isFinite(latValue)) record.lat = Math.round(latValue * 10000) / 10000;
+      else record.lat = NaN;
+    }
+
+    if (lonText !== "") {
+      const lonValue = Number(lonText);
+      if (Number.isFinite(lonValue)) record.lon = Math.round(lonValue * 10000) / 10000;
+      else record.lon = NaN;
+    }
 
     return { ident, record };
   }
@@ -351,20 +373,17 @@
     clearForm(form);
     showMessage("", false);
 
-    form.dataset.mode = mode;
-    title.textContent = mode === "add" ? "Add/Amend Airport" : "Amend Airport";
-    submitButton.textContent = mode === "add" ? "Add Airport" : "Save Amendment";
+    form.dataset.mode = mode || "combined";
+    title.textContent = "Add/Amend Airport";
+    submitButton.textContent = "Save Airport";
 
-    if (mode === "amend") {
-      const currentIdent = normalizeIdent(currentSearch ? currentSearch.value : "");
-      if (currentIdent) {
-        const found = lookupRecord(currentIdent);
-        if (found) {
-          fillFormFromRecord(form, found.ident, found.record);
-        } else {
-          form.identifier.value = currentIdent;
-          showMessage("No existing record found. Use Add/Amend Airport if this is a new airport.", true);
-        }
+    const currentIdent = normalizeIdent(currentSearch ? currentSearch.value : "");
+    if (currentIdent) {
+      const found = lookupRecord(currentIdent);
+      if (found) {
+        fillFormFromRecord(form, found.ident, found.record);
+      } else {
+        form.identifier.value = currentIdent;
       }
     }
 
@@ -390,7 +409,7 @@
   }
 
   window.ZFW_OPEN_AIRPORT_CORRECTION_MODAL = function () {
-    openModal("add");
+    openModal("combined");
   };
 
   function bindAirportCorrectionButton() {
@@ -403,7 +422,7 @@
           event.preventDefault();
           event.stopPropagation();
         }
-        openModal("add");
+        openModal("combined");
       };
 
       button.addEventListener("pointerdown", handler, true);
@@ -665,22 +684,12 @@
       }
 
       if (Number.isNaN(record.lat) || Number.isNaN(record.lon)) {
-        showMessage("Latitude and longitude must be valid numbers when entered. APP fields may be left blank when none apply.", true);
+        showMessage("Latitude and longitude must be valid numbers when entered. APP, contact, and hours fields may be left blank when none apply.", true);
         return;
       }
 
       const records = getRecords();
       const exists = Boolean(lookupRecord(ident));
-
-      if (mode === "add" && exists) {
-        showMessage("That airport already exists. Use Add/Amend Airport instead.", true);
-        return;
-      }
-
-      if (mode === "amend" && !exists) {
-        showMessage("That airport does not exist yet. Use Add/Amend Airport instead.", true);
-        return;
-      }
 
       const corrections = loadCorrections();
       corrections[ident] = record;
@@ -1441,7 +1450,7 @@ const corrections = loadCorrections();
     const airportButton = document.getElementById("amendAirportButton");
     if (airportButton && airportButton.dataset.airportCorrectionBound !== "true" && typeof openModal === "function") {
       airportButton.dataset.airportCorrectionBound = "true";
-      airportButton.addEventListener("click", function () { openModal("add"); });
+      airportButton.addEventListener("click", function () { openModal("combined"); });
     }
 
     const pirepButton = document.getElementById("addPirepNavButton");
