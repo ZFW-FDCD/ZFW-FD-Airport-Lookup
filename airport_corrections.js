@@ -543,6 +543,61 @@
     });
   }
 
+  
+  const APPROACH_ONLY_SECTOR_DEFAULTS = {"SHV APP":"MLU 30","LTS APP":"OKC 35","SJT APP":"MAF 40"};
+
+  function applyApproachOnlySectorDefaults() {
+    const records = getRecords();
+
+    Object.keys(records).forEach((ident) => {
+      const record = records[ident];
+      if (!record) return;
+
+      const recordType = String(record.record_type || record.type || "").toUpperCase();
+      if (["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(recordType)) return;
+
+      if (Array.isArray(record.sectors) && record.sectors.length) return;
+
+      const apps = Array.isArray(record.apps) ? record.apps : [];
+      const appText = apps.map((app) => String(app || "").toUpperCase()).join(" ");
+
+      Object.keys(APPROACH_ONLY_SECTOR_DEFAULTS).forEach((appName) => {
+        if (!appText.includes(appName)) return;
+
+        const sector = APPROACH_ONLY_SECTOR_DEFAULTS[appName];
+        const area = SECTOR_TO_AREA[sector] || "";
+
+        record.record_type = "AIRPORT";
+        record.sectors = [sector];
+        record.areas = area ? [area] : [];
+      });
+    });
+  }
+
+  
+  function applyDirectAirportOverrides() {
+    ["LBB", "KLBB"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["LBB 64"];
+      found.record.areas = ["RDR"];
+      found.record.apps = ["LBB APP"];
+      found.record.nearest_wx = "LBB";
+      if (!String(found.record.airport_name || "").trim()) {
+        found.record.airport_name = "Lubbock Preston Smith International Airport";
+      }
+    });
+
+    ["7F7", "K7F7"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["ACT 96"];
+      found.record.areas = ["DAL"];
+    });
+  }
+
   function applyBuiltInAirportCorrections() {
     const records = getRecords();
 
@@ -656,6 +711,10 @@
     applyAirportNameFallbacks();
 
     applyNearestWxFallbacks();
+
+    applyApproachOnlySectorDefaults();
+
+    applyDirectAirportOverrides();
 
   }
 

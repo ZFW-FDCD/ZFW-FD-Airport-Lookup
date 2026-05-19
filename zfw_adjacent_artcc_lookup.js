@@ -78,7 +78,35 @@
     return { ident, record };
   }
 
+
+  function localZfwAirportRecordExists(identifier){
+    const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+    const aliases = aliasesFor(identifier);
+
+    function isLocalAirportRecord(record){
+      if(!record) return false;
+      const recordType = String(record.record_type || record.type || "").toUpperCase();
+      if(recordType === "AIRPORT") return true;
+      if(["NAVAID","WAYPOINT","FIX","VOR","VORTAC","NDB"].includes(recordType)) return false;
+      return Boolean(
+        (Array.isArray(record.sectors) && record.sectors.length) ||
+        (Array.isArray(record.apps) && record.apps.length) ||
+        (Array.isArray(record.contacts) && record.contacts.length) ||
+        (Array.isArray(record.hours) && record.hours.length) ||
+        record.airport_name
+      );
+    }
+
+    return aliases.some(function(alias){
+      return isLocalAirportRecord(records[alias]);
+    });
+  }
+
   function getAdjacentRecord(identifier){
+    if(localZfwAirportRecordExists(identifier)){
+      return null;
+    }
+
     const store = ensureStore();
 
     for(const alias of aliasesFor(identifier)){
