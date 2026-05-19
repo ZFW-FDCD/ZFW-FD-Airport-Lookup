@@ -403,7 +403,7 @@
   }
 
   
-  const GGG_APP_SECTOR_DEFAULTS = {"07F":"TXK 27","K07F":"TXK 27","0TX3":"TXK 27","11TA":"TXK 27","16TE":"TXK 27","18TE":"TXK 27","1TT8":"TXK 27","1TX9":"TXK 27","2XA7":"TXK 27","3F9":"TXK 27","K3F9":"TXK 27","3TS0":"TXK 27","3XS6":"TXK 27","4TX6":"TXK 27","4XA9":"TXK 27","59XA":"TXK 27","61TA":"TXK 27","6F7":"TXK 27","K6F7":"TXK 27","6TX3":"TXK 27","81TX":"TXK 27","91XA":"TXK 27","96TA":"TXK 27","96TS":"TXK 27","F51":"TXK 27","KF51":"TXK 27","KGGG":"TXK 27","GGG":"TXK 27","KJDD":"TXK 27","JDD":"TXK 27","KJXI":"TXK 27","JXI":"TXK 27","TA27":"TXK 27","TX09":"TXK 27","TX62":"TXK 27","XA01":"TXK 27","XA46":"TXK 27","XA50":"TXK 27","XS02":"TXK 27","00TX":"TXK 27","0XS9":"TXK 27","10TS":"TXK 27","27TA":"TXK 27","38XA":"TXK 27","3TX1":"TXK 27","51TX":"TXK 27","5TX7":"TXK 27","5XS5":"TXK 27","60TA":"TXK 27","6X0":"TXK 27","K6X0":"TXK 27","71XA":"TXK 27","7TA7":"TXK 27","99X":"TXK 27","K99X":"TXK 27","KJSO":"TXK 27","JSO":"TXK 27","KRFI":"TXK 27","RFI":"TXK 27","KTYR":"TXK 27","TYR":"TXK 27","T25":"TXK 27","KT25":"TXK 27","TA37":"TXK 27","TA61":"TXK 27","TE18":"TXK 27","TE91":"TXK 27","TX1":"TXK 27","KTX1":"TXK 27","TX40":"TXK 27","TX85":"TXK 27","XA28":"TXK 27","XA58":"TXK 27","XS91":"TXK 27"};
+  const GGG_APP_SECTOR_DEFAULTS = {"07F":"UIM 83","K07F":"UIM 83","0TX3":"UIM 83","11TA":"UIM 83","16TE":"UIM 83","18TE":"UIM 83","1TT8":"UIM 83","1TX9":"UIM 83","2XA7":"UIM 83","3F9":"UIM 83","K3F9":"UIM 83","3TS0":"UIM 83","3XS6":"UIM 83","4TX6":"UIM 83","4XA9":"UIM 83","59XA":"UIM 83","61TA":"UIM 83","6F7":"UIM 83","K6F7":"UIM 83","6TX3":"UIM 83","81TX":"UIM 83","91XA":"UIM 83","96TA":"UIM 83","96TS":"UIM 83","F51":"UIM 83","KF51":"UIM 83","KGGG":"UIM 83","GGG":"UIM 83","KJDD":"UIM 83","JDD":"UIM 83","KJXI":"UIM 83","JXI":"UIM 83","TA27":"UIM 83","TX09":"UIM 83","TX62":"UIM 83","XA01":"UIM 83","XA46":"UIM 83","XA50":"UIM 83","XS02":"UIM 83","00TX":"UIM 83","0XS9":"DON 29","10TS":"MLU 30","27TA":"MLU 30","38XA":"DON 29","3TX1":"DON 29","51TX":"UIM 83","5TX7":"UIM 83","5XS5":"UIM 83","60TA":"MLU 30","6X0":"DON 29","K6X0":"DON 29","71XA":"DON 29","7TA7":"DON 29","99X":"DON 29","K99X":"DON 29","KJSO":"DON 29","JSO":"DON 29","KRFI":"MLU 30","RFI":"MLU 30","KTYR":"DON 29","TYR":"DON 29","T25":"DON 29","KT25":"DON 29","TA37":"DON 29","TA61":"UIM 83","TE18":"UIM 83","TE91":"DON 29","TX1":"DON 29","KTX1":"DON 29","TX40":"DON 29","TX85":"DON 29","XA28":"DON 29","XA58":"DON 29","XS91":"DON 29"};
 
   function recordUsesGGGApproach(record) {
     const apps = Array.isArray(record && record.apps) ? record.apps : [];
@@ -425,6 +425,62 @@
         found.record.lat = 32.161186;
         found.record.lon = -94.794822;
         found.record.nearest_wx = "RFI";
+      }
+    });
+  }
+
+  
+  function applyAslSixf7DepartureRules() {
+    const ewDepartureUpdates = {
+      apps: ["SHV APP", "GGG APP"],
+      vscs: ["351 (05)", "349 (03)"],
+      contacts: [
+        "E Dep: SHV APP VSCS 351 (05) TEL (318) 747-8519",
+        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4020"
+      ],
+      hours: ["E Dep SHV 0000-2359", "W Dep GGG 0600-2200"]
+    };
+
+    ["ASL", "KASL"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["MLU 30"];
+      found.record.areas = ["CQY"];
+      found.record.apps = ewDepartureUpdates.apps.slice();
+      found.record.vscs = ewDepartureUpdates.vscs.slice();
+      found.record.contacts = ewDepartureUpdates.contacts.slice();
+      found.record.hours = ewDepartureUpdates.hours.slice();
+    });
+
+    ["6F7"].forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record) return;
+      found.record.record_type = "AIRPORT";
+      const sector = GGG_APP_SECTOR_DEFAULTS["6F7"] || "UIM 83";
+      found.record.sectors = [sector];
+      found.record.areas = [SECTOR_TO_AREA[sector] || "DAL"];
+      found.record.apps = ewDepartureUpdates.apps.slice();
+      found.record.vscs = ewDepartureUpdates.vscs.slice();
+      found.record.contacts = ewDepartureUpdates.contacts.slice();
+      found.record.hours = ewDepartureUpdates.hours.slice();
+    });
+  }
+
+  function applyAirportNameFallbacks() {
+    const records = getRecords();
+    Object.keys(records).forEach((ident) => {
+      const record = records[ident];
+      if (!record) return;
+      const recordType = String(record.record_type || record.type || "").toUpperCase();
+      const isAirport = recordType === "AIRPORT" ||
+        (Array.isArray(record.apps) && record.apps.length) ||
+        (Array.isArray(record.sectors) && record.sectors.length) ||
+        (Array.isArray(record.contacts) && record.contacts.length) ||
+        (Array.isArray(record.hours) && record.hours.length);
+
+      if (isAirport && !String(record.airport_name || "").trim()) {
+        record.airport_name = ident + " Airport";
       }
     });
   }
@@ -536,6 +592,10 @@
     applyD10OutageSectorDefaults();
 
     applyGGGAppSectorDefaults();
+
+    applyAslSixf7DepartureRules();
+
+    applyAirportNameFallbacks();
 
   }
 
