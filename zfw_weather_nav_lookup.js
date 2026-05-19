@@ -67,8 +67,38 @@
     return Boolean(airportRecordForSameIdent(ident) && navRecordExistsForSameIdent(ident));
   }
 
+  function airportWeatherForIdent(ident){
+    const base = baseAirportIdent(ident);
+    const airportRecord = airportRecordForSameIdent(ident);
+
+    if(airportRecord && airportRecord.nearest_wx){
+      const wx = normalizeIdent(airportRecord.nearest_wx);
+      return {
+        id: wx,
+        title: wx === base
+          ? "Airport identifier also serves as the weather reporting station."
+          : "Nearest weather reporting station assigned for this airport/navaid identifier."
+      };
+    }
+
+    const station = weatherStationCandidates().find(item => {
+      const sid = normalizeIdent(item.id);
+      return sid === base || normalizeIdent("K" + sid) === normalizeIdent(ident);
+    });
+
+    if(station){
+      return {
+        id: base,
+        title: "Airport identifier also serves as the weather reporting station."
+      };
+    }
+
+    return null;
+  }
+
   function airportWeatherIdForIdent(ident){
-    return baseAirportIdent(ident);
+    const wx = airportWeatherForIdent(ident);
+    return wx ? wx.id : "";
   }
 
 
@@ -507,16 +537,19 @@
     const record = getRecord(typedIdent);
 
     if(isSharedAirportNavIdent(typedIdent)){
-      const airportWx = airportWeatherIdForIdent(typedIdent);
-      output.textContent = airportWx;
-      output.title = "Airport identifier also serves as the weather reporting station.";
-      lastDisplayedWx = "";
-      lastDisplayedTitle = "";
-      lastFoundWasNav = false;
-      lastFoundRecord = null;
-      setNearestHighlight(false);
-      hideMapForNav(null);
-      return;
+      const airportWx = airportWeatherForIdent(typedIdent);
+      if(airportWx){
+        output.textContent = airportWx.id;
+        output.title = airportWx.title || "";
+        lastLookupIdent = typedIdent;
+        lastDisplayedWx = airportWx.id;
+        lastDisplayedTitle = airportWx.title || "";
+        lastFoundWasNav = false;
+        lastFoundRecord = null;
+        setNearestHighlight(false);
+        hideMapForNav(null);
+        return;
+      }
     }
 
     if(record && isNavType(record)){ forceStatus(typedIdent + " found"); clearAirportOutputsForNav(record); }
@@ -596,17 +629,19 @@
     const record = getRecord(typedIdent);
 
     if(isSharedAirportNavIdent(typedIdent)){
-      const airportWx = airportWeatherIdForIdent(typedIdent);
-      output.textContent = airportWx;
-      output.title = "Airport identifier also serves as the weather reporting station.";
-      lastLookupIdent = typedIdent;
-      lastDisplayedWx = airportWx;
-      lastDisplayedTitle = output.title || "";
-      lastFoundWasNav = false;
-      lastFoundRecord = null;
-      setNearestHighlight(false);
-      hideMapForNav(null);
-      return;
+      const airportWx = airportWeatherForIdent(typedIdent);
+      if(airportWx){
+        output.textContent = airportWx.id;
+        output.title = airportWx.title || "";
+        lastLookupIdent = typedIdent;
+        lastDisplayedWx = airportWx.id;
+        lastDisplayedTitle = airportWx.title || "";
+        lastFoundWasNav = false;
+        lastFoundRecord = null;
+        setNearestHighlight(false);
+        hideMapForNav(null);
+        return;
+      }
     }
 
     const nearest = calculateNearest(record);

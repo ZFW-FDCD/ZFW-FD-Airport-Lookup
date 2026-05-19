@@ -1017,6 +1017,24 @@
         return ident;
       }
 
+      function omicAirportWeatherForIdent(value) {
+        const base = omicBaseAirportIdent(value);
+        const airportRecord = omicAirportRecordForSameIdent(value);
+
+        if (airportRecord && airportRecord.nearest_wx) {
+          return normalizeOmicIdent(airportRecord.nearest_wx);
+        }
+
+        const stations = window.ZFW_WEATHER_STATIONS || [];
+        const searchIdent = normalizeOmicIdent(value);
+        const foundStation = stations.some(function (station) {
+          const sid = normalizeOmicIdent(station && station.id);
+          return sid === base || normalizeOmicIdent("K" + sid) === searchIdent;
+        });
+
+        return foundStation ? base : "";
+      }
+
       function omicAirportRecordForSameIdent(value) {
         const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
         const ident = omicBaseAirportIdent(value);
@@ -1513,7 +1531,8 @@
         setOmicText("omicArea", splitOutput(areas));
 
         if (omicIsSharedAirportNavIdent(searched)) {
-          setOmicText("omicWeather", omicBaseAirportIdent(searched));
+          const airportWx = omicAirportWeatherForIdent(searched);
+          setOmicText("omicWeather", airportWx || nearestWeather(record));
         } else {
           setOmicText("omicWeather", nearestWeather(record));
 
@@ -1682,6 +1701,10 @@
                 + '<div class="pirep-step"><span class="clearance-step-number">2</span><p class="pirep-step-text">Click "XX-ALNOT CNLD".</p></div>'
                 + '<div class="pirep-step"><span class="clearance-step-number">3</span><p class="pirep-step-text">Fill in the aircraft information.</p></div>'
                 + '<div class="pirep-step"><span class="clearance-step-number">4</span><p class="pirep-step-text">Click "File".</p></div>'
+                + '</div>'
+                + '<div class="omic-reference-subheader" style="color: var(--cyan) !important; text-decoration: none !important; margin-top: 14px;">NON-ZFW</div>'
+                + '<div class="pirep-step-list">'
+                + '<div class="pirep-step"><span class="clearance-step-number">1</span><p class="pirep-step-text">Click on the message and reply with "RGR".</p></div>'
                 + '</div>'
                 + '</section>'
                 + '</div>';

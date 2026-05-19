@@ -485,6 +485,55 @@
     });
   }
 
+  
+  const AIRPORT_NEAREST_WX_SECTOR_DEFAULTS = {"MAF 40":"MDD","EDN 62":"INJ","ACT 96":"INJ","ABI 63":"SWW","SPS 34":"DUC","OKC 35":"OJA","UKW 75":"GLE","SEA 37":"SWI","MLC 38":"SRE","FRI 53":"GLE","POS 32":"GLE","LBB 64":"PVW","TXK 27":"TXK","UIM 83":"JDD","DON 29":"TYR","MLU 30":"MLU"};
+
+  function applyNearestWxFallbacks() {
+    const records = getRecords();
+    const stationIds = new Set(
+      (window.ZFW_WEATHER_STATIONS || [])
+        .map((station) => String(station && station.id || "").trim().toUpperCase())
+        .filter(Boolean)
+    );
+
+    Object.keys(records).forEach((ident) => {
+      const record = records[ident];
+      if (!record) return;
+
+      const recordType = String(record.record_type || record.type || "").toUpperCase();
+      const isAirport = recordType === "AIRPORT" ||
+        (Array.isArray(record.apps) && record.apps.length) ||
+        (Array.isArray(record.sectors) && record.sectors.length) ||
+        (Array.isArray(record.contacts) && record.contacts.length) ||
+        (Array.isArray(record.hours) && record.hours.length);
+
+      if (!isAirport) return;
+
+      if (ident === "GTH" || ident === "KGTH") {
+        record.record_type = "AIRPORT";
+        record.airport_name = "Guthrie Airport";
+        record.sectors = ["LBB 64"];
+        record.areas = ["RDR"];
+        record.nearest_wx = "CDS";
+        return;
+      }
+
+      const current = String(record.nearest_wx || "").trim().toUpperCase();
+      if (current && (!stationIds.size || stationIds.has(current))) return;
+
+      const baseIdent = /^K[A-Z0-9]{3}$/.test(ident) ? ident.slice(1) : ident;
+      if (stationIds.has(baseIdent)) {
+        record.nearest_wx = baseIdent;
+        return;
+      }
+
+      const sector = Array.isArray(record.sectors) && record.sectors.length ? record.sectors[0] : "";
+      if (AIRPORT_NEAREST_WX_SECTOR_DEFAULTS[sector]) {
+        record.nearest_wx = AIRPORT_NEAREST_WX_SECTOR_DEFAULTS[sector];
+      }
+    });
+  }
+
   function applyBuiltInAirportCorrections() {
     const records = getRecords();
 
@@ -596,6 +645,8 @@
     applyAslSixf7DepartureRules();
 
     applyAirportNameFallbacks();
+
+    applyNearestWxFallbacks();
 
   }
 
