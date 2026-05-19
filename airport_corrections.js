@@ -379,6 +379,29 @@
     return true;
   }
 
+  
+  const D10_OUTAGE_SECTOR_DEFAULTS = {"DFW":"TXK 27","KDFW":"TXK 27","DAL":"TXK 27","KDAL":"TXK 27","ADS":"TXK 27","KADS":"TXK 27","RBD":"TXK 27","KRBD":"TXK 27","GKY":"TXK 27","KGKY":"TXK 27","FTW":"TXK 27","KFTW":"TXK 27","AFW":"TXK 27","KAFW":"TXK 27","FWS":"TXK 27","KFWS":"TXK 27","DTO":"TXK 27","KDTO":"TXK 27","TKI":"TXK 27","KTKI":"TXK 27","JWY":"TXK 27","KJWY":"TXK 27","LNC":"TXK 27","KLNC":"TXK 27","HQZ":"TXK 27","KHQZ":"TXK 27","WEA":"TXK 27","KWEA":"TXK 27","GPM":"TXK 27","KGPM":"TXK 27","F46":"UIM 83","KF46":"UIM 83","GVT":"UIM 83","KGVT":"UIM 83","SLR":"UIM 83","KSLR":"UIM 83","TRL":"UIM 83","KTRL":"UIM 83","SEP":"EDN 62","KSEP":"EDN 62","MWL":"POS 32","KMWL":"POS 32","XBP":"POS 32","KXBP":"POS 32","F00":"SEA 37","KF00":"SEA 37","0F2":"UKW 75","K0F2":"UKW 75","1F0":"FRI 53","K1F0":"FRI 53","JSO":"TXK 27","KJSO":"TXK 27","JXI":"TXK 27","KJXI":"TXK 27","RFI":"TXK 27","KRFI":"TXK 27","TYR":"TXK 27","KTYR":"TXK 27"};
+
+  function recordUsesD10Approach(record) {
+    const apps = Array.isArray(record && record.apps) ? record.apps : [];
+    const appText = apps.map((app) => String(app || "").toUpperCase()).join(" ");
+    return appText.includes("D10") || appText.includes("DFW APP");
+  }
+
+  function applyD10OutageSectorDefaults() {
+    Object.keys(D10_OUTAGE_SECTOR_DEFAULTS).forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record || !recordUsesD10Approach(found.record)) return;
+
+      const sector = D10_OUTAGE_SECTOR_DEFAULTS[ident];
+      const area = SECTOR_TO_AREA[sector] || "";
+
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = [sector];
+      found.record.areas = area ? [area] : [];
+    });
+  }
+
   function applyBuiltInAirportCorrections() {
     const records = getRecords();
 
@@ -482,6 +505,8 @@
       if (!found.record.contacts.length) found.record.contacts.push("(806) 474-0450");
       if (!found.record.hours.length) found.record.hours.push("0000-2359");
     });
+
+    applyD10OutageSectorDefaults();
 
   }
 
