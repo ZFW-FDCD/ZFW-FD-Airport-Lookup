@@ -200,7 +200,7 @@
 
     clearHighlights();
 
-    setText("sector", "Outside ZFW");
+    setText("sector", "OUTSIDE OF ZFW");
     setText("area", centerCode);
     setText("approach", "Outside ZFW ARTCC");
     setText("vscs", "—");

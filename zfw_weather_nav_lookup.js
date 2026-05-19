@@ -72,10 +72,18 @@
   }
 
 
+  const BUILT_IN_ADJACENT_WEATHER = {
+    MON: { id: "LLQ", title: "MON is outside ZFW in ZME. Stored nearest weather reporting station." },
+    LLQ: { id: "LLQ", title: "LLQ is outside ZFW in ZME. Stored nearest weather reporting station." },
+    KLLQ: { id: "LLQ", title: "LLQ is outside ZFW in ZME. Stored nearest weather reporting station." }
+  };
+
   function adjacentWeatherForIdent(ident){
     const store = window.ZFW_ADJACENT_ARTCC_AIRPORTS || {};
     const airports = store.airports || {};
     ident = normalizeIdent(ident);
+
+    if(BUILT_IN_ADJACENT_WEATHER[ident]) return BUILT_IN_ADJACENT_WEATHER[ident];
 
     const aliases = [ident];
     if(/^K[A-Z0-9]{3}$/.test(ident)) aliases.push(ident.slice(1));
