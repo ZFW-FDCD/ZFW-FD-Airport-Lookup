@@ -1472,12 +1472,14 @@
 
         if (result.adjacent) {
           const center = record.center || "—";
+          const adjacentWeather = record.nearest_wx ? normalizeOmicIdent(record.nearest_wx) : "—";
           setOmicText("omicSector", "Outside ZFW");
           setOmicText("omicApp", center + " Flight Data Number: " + (record.fdcd || "—"));
           setOmicText("omicArea", center);
-          setOmicText("omicWeather", "—");
+          setOmicText("omicWeather", adjacentWeather);
           highlightOmicBox("omicApp", "green");
-          setOmicStatus(searched + " found", "var(--amber)");
+          if (record.nearest_wx) highlightOmicBox("omicWeather", "green");
+          setOmicStatus(searched + " found outside ZFW", "var(--amber)");
           scheduleOmicClear();
           return;
         }

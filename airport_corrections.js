@@ -960,7 +960,7 @@
     form.recordType.value = record.record_type || "WAYPOINT";
     form.nearestWx.value = record.nearest_wx || "";
 
-    form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
+    if (form.notes) form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
   }
 
   function makePirepRecordFromForm(form) {
@@ -1027,19 +1027,33 @@
     input.focus();
   }
 
-  function createPirepUi() {
-    if (document.getElementById("addPirepNavButton")) return;
-
+  function bindPirepNavButton() {
+    let button = document.getElementById("addPirepNavButton");
     const tools = document.getElementById("correctionTools");
-    if (tools) {
-      const button = document.createElement("button");
+
+    if (!button && tools) {
+      button = document.createElement("button");
       button.type = "button";
       button.id = "addPirepNavButton";
       button.className = "secondary";
       button.textContent = "Add/Amend Waypoint/Navaid for PIREP";
       tools.appendChild(button);
-      button.addEventListener("click", openPirepModal);
     }
+
+    if (button && button.dataset.pirepNavBound !== "true") {
+      button.dataset.pirepNavBound = "true";
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openPirepModal();
+      }, true);
+    }
+  }
+
+  function createPirepUi() {
+    bindPirepNavButton();
+
+    if (document.getElementById("pirepNavModal")) return;
 
     const modal = document.createElement("div");
     modal.id = "pirepNavModal";
@@ -1145,6 +1159,62 @@ const corrections = loadCorrections();
   } else {
     createPirepUi();
   }
+})();
+
+
+
+
+/* PIREP waypoint/navaid button safety rebinder */
+(function () {
+  "use strict";
+
+  function tryOpenPirepModal() {
+    const modal = document.getElementById("pirepNavModal");
+    const form = document.getElementById("pirepNavForm");
+    const input = document.getElementById("airportInput");
+
+    if (!modal || !form) return false;
+
+    Array.from(form.elements).forEach(function (element) {
+      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
+        element.value = "";
+      }
+    });
+
+    const currentIdent = String((input && input.value) || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (currentIdent && form.identifier) {
+      form.identifier.value = currentIdent;
+    }
+
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("correction-modal-open");
+    setTimeout(function () {
+      if (form.identifier) form.identifier.focus();
+    }, 0);
+
+    return true;
+  }
+
+  function zfwPirepNavButtonSafetyRebind() {
+    const button = document.getElementById("addPirepNavButton");
+    if (!button || button.dataset.pirepSafetyBound === "true") return;
+
+    button.dataset.pirepSafetyBound = "true";
+    button.addEventListener("click", function (event) {
+      if (tryOpenPirepModal()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }, true);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", zfwPirepNavButtonSafetyRebind);
+  } else {
+    zfwPirepNavButtonSafetyRebind();
+  }
+
+  setInterval(zfwPirepNavButtonSafetyRebind, 500);
 })();
 
 

@@ -10,6 +10,12 @@
     ZME: { name: "Memphis ARTCC", fdcd: "901-368-8453/8449" }
   };
 
+  const BUILT_IN_ADJACENT_RECORDS = {
+    MON: { center: "ZME", name: "MON NAVAID", fdcd: "901-368-8453/8449", record_type: "NAVAID", nearest_wx: "LLQ" },
+    LLQ: { center: "ZME", name: "LLQ AIRPORT", fdcd: "901-368-8453/8449", record_type: "AIRPORT", nearest_wx: "LLQ" },
+    KLLQ: { center: "ZME", name: "LLQ AIRPORT", fdcd: "901-368-8453/8449", record_type: "AIRPORT", nearest_wx: "LLQ" }
+  };
+
   function normalizeIdent(value){
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
@@ -41,6 +47,14 @@
     window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports = window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports || {};
 
     Object.assign(window.ZFW_ADJACENT_ARTCC_AIRPORTS.centers, CENTER_INFO);
+
+    Object.keys(BUILT_IN_ADJACENT_RECORDS).forEach(function (ident) {
+      window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports[ident] = Object.assign(
+        {},
+        BUILT_IN_ADJACENT_RECORDS[ident],
+        window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports[ident] || {}
+      );
+    });
 
     return window.ZFW_ADJACENT_ARTCC_AIRPORTS;
   }
@@ -193,13 +207,20 @@
     setHtml("contact", centerCode + " Flight Data Number: " + fdcd);
     setText("hours", "—");
     setText("airportName", record.name || result.ident);
-    setText("nearestWeather", "—");
+    setText("nearestWeather", record.nearest_wx || "—");
 
     const contactCard = document.getElementById("contactCard");
     if(contactCard){
       contactCard.classList.add("nearest-wx-highlight");
       contactCard.style.borderColor = "#ffd166";
       contactCard.style.boxShadow = "0 0 0 2px rgba(255,209,102,.45),0 0 16px rgba(255,209,102,.35)";
+    }
+
+    const nearestCard = document.getElementById("nearestWeatherCard");
+    if(nearestCard && record.nearest_wx){
+      nearestCard.classList.add("nearest-wx-highlight");
+      nearestCard.style.borderColor = "var(--green)";
+      nearestCard.style.boxShadow = "";
     }
 
     const status = document.getElementById("status");

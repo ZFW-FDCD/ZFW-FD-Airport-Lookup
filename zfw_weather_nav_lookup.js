@@ -71,6 +71,29 @@
     return baseAirportIdent(ident);
   }
 
+
+  function adjacentWeatherForIdent(ident){
+    const store = window.ZFW_ADJACENT_ARTCC_AIRPORTS || {};
+    const airports = store.airports || {};
+    ident = normalizeIdent(ident);
+
+    const aliases = [ident];
+    if(/^K[A-Z0-9]{3}$/.test(ident)) aliases.push(ident.slice(1));
+    else if(/^[A-Z0-9]{3}$/.test(ident)) aliases.push("K" + ident);
+
+    for(const alias of [...new Set(aliases)]){
+      const rec = airports[alias];
+      if(rec && rec.nearest_wx){
+        return {
+          id: normalizeIdent(rec.nearest_wx),
+          title: (rec.name || alias) + " is outside ZFW. Stored nearest weather reporting station."
+        };
+      }
+    }
+
+    return null;
+  }
+
   function getRecord(ident){
     const records = ensureAirportData();
     ident = normalizeIdent(ident);
@@ -460,6 +483,19 @@
       return;
     }
 
+    const adjacentWeather = adjacentWeatherForIdent(typedIdent);
+    if(adjacentWeather){
+      output.textContent = adjacentWeather.id;
+      output.title = adjacentWeather.title || "";
+      lastLookupIdent = typedIdent;
+      lastDisplayedWx = adjacentWeather.id;
+      lastDisplayedTitle = adjacentWeather.title || "";
+      lastFoundWasNav = false;
+      lastFoundRecord = null;
+      setNearestHighlight(true);
+      return;
+    }
+
     const record = getRecord(typedIdent);
 
     if(isSharedAirportNavIdent(typedIdent)){
@@ -535,6 +571,19 @@
 
     const typedIdent = normalizeIdent(identifier || (input ? input.value : ""));
     if(!typedIdent || !isCompleteLookupIdent(typedIdent)) return;
+
+    const adjacentWeather = adjacentWeatherForIdent(typedIdent);
+    if(adjacentWeather){
+      output.textContent = adjacentWeather.id;
+      output.title = adjacentWeather.title || "";
+      lastLookupIdent = typedIdent;
+      lastDisplayedWx = adjacentWeather.id;
+      lastDisplayedTitle = adjacentWeather.title || "";
+      lastFoundWasNav = false;
+      lastFoundRecord = null;
+      setNearestHighlight(true);
+      return;
+    }
 
     const record = getRecord(typedIdent);
 
