@@ -1273,12 +1273,14 @@
       function nearestWeather(record) {
         if (!record) return "—";
 
+        if (record.nearest_wx) {
+          return normalizeOmicIdent(record.nearest_wx);
+        }
+
         const lat = Number(record.lat);
         const lon = Number(record.lon);
         const stations = window.ZFW_WEATHER_STATIONS || [];
 
-        // Prefer an actual nearest-station calculation any time coordinates exist.
-        // Stored nearest_wx values are only a fallback for records without usable coordinates.
         if (Number.isFinite(lat) && Number.isFinite(lon) && stations.length) {
           let best = null;
 
@@ -1297,10 +1299,6 @@
           });
 
           if (best) return best.id;
-        }
-
-        if (record.nearest_wx) {
-          return normalizeOmicIdent(record.nearest_wx);
         }
 
         return "—";

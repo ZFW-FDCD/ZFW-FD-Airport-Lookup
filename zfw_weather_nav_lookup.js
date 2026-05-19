@@ -293,12 +293,18 @@
   function calculateNearest(record){
     if(!record) return null;
 
+    if(record.nearest_wx){
+      const id = normalizeIdent(record.nearest_wx);
+      return {
+        id,
+        title: stationNameById(id) || "Stored nearest weather reporting station"
+      };
+    }
+
     const lat = Number(record.lat);
     const lon = Number(record.lon);
     const stations = weatherStationCandidates();
 
-    // Prefer an actual closest calculation any time coordinates exist.
-    // Stored nearest_wx values are only a fallback for records without usable coordinates.
     if(Number.isFinite(lat) && Number.isFinite(lon) && stations.length){
       let best = null;
 
@@ -321,11 +327,6 @@
             : best.distanceNm.toFixed(1) + " NM calculated nearest"
         };
       }
-    }
-
-    if(record.nearest_wx){
-      const id = normalizeIdent(record.nearest_wx);
-      return { id, title: stationNameById(id) || "Stored fallback weather reporting station" };
     }
 
     return null;

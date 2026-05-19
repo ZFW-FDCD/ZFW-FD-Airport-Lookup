@@ -416,9 +416,12 @@
       const found = lookupRecord(ident);
       if (!found || !found.record || !recordUsesGGGApproach(found.record)) return;
 
+      const sector = GGG_APP_SECTOR_DEFAULTS[ident];
+      const area = SECTOR_TO_AREA[sector] || "";
+
       found.record.record_type = "AIRPORT";
-      found.record.sectors = ["TXK 27"];
-      found.record.areas = ["DAL"];
+      found.record.sectors = [sector];
+      found.record.areas = area ? [area] : [];
 
       if (ident === "60TA") {
         found.record.airport_name = "UT Health Henderson Heliport";
@@ -487,6 +490,7 @@
 
   
   const AIRPORT_NEAREST_WX_SECTOR_DEFAULTS = {"MAF 40":"MDD","EDN 62":"INJ","ACT 96":"INJ","ABI 63":"SWW","SPS 34":"DUC","OKC 35":"OJA","UKW 75":"GLE","SEA 37":"SWI","MLC 38":"SRE","FRI 53":"GLE","POS 32":"GLE","LBB 64":"PVW","TXK 27":"TXK","UIM 83":"JDD","DON 29":"TYR","MLU 30":"MLU"};
+  const AIRPORT_NEAREST_WX_IDENT_DEFAULTS = {"OL50":"LTS","TS30":"LTS","02LA":"SHV","0LA4":"SHV","15LA":"SHV","41LA":"SHV","43LA":"SHV","5LA0":"SHV","73LA":"SHV","77LA":"SHV","84LA":"SHV","L87":"SHV","LA19":"SHV","LA85":"SHV","LA94":"SHV","LS07":"SHV","LS29":"SHV","LS41":"SHV","LS78":"SHV","TS32":"SHV","03TS":"SJT","24TT":"SJT","7TA9":"SJT"};
 
   function applyNearestWxFallbacks() {
     const records = getRecords();
@@ -520,6 +524,11 @@
 
       const current = String(record.nearest_wx || "").trim().toUpperCase();
       if (current && (!stationIds.size || stationIds.has(current))) return;
+
+      if (AIRPORT_NEAREST_WX_IDENT_DEFAULTS[ident]) {
+        record.nearest_wx = AIRPORT_NEAREST_WX_IDENT_DEFAULTS[ident];
+        return;
+      }
 
       const baseIdent = /^K[A-Z0-9]{3}$/.test(ident) ? ident.slice(1) : ident;
       if (stationIds.has(baseIdent)) {
