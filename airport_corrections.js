@@ -402,6 +402,33 @@
     });
   }
 
+  
+  const GGG_APP_SECTOR_DEFAULTS = {"07F":"TXK 27","K07F":"TXK 27","0TX3":"TXK 27","11TA":"TXK 27","16TE":"TXK 27","18TE":"TXK 27","1TT8":"TXK 27","1TX9":"TXK 27","2XA7":"TXK 27","3F9":"TXK 27","K3F9":"TXK 27","3TS0":"TXK 27","3XS6":"TXK 27","4TX6":"TXK 27","4XA9":"TXK 27","59XA":"TXK 27","61TA":"TXK 27","6F7":"TXK 27","K6F7":"TXK 27","6TX3":"TXK 27","81TX":"TXK 27","91XA":"TXK 27","96TA":"TXK 27","96TS":"TXK 27","F51":"TXK 27","KF51":"TXK 27","KGGG":"TXK 27","GGG":"TXK 27","KJDD":"TXK 27","JDD":"TXK 27","KJXI":"TXK 27","JXI":"TXK 27","TA27":"TXK 27","TX09":"TXK 27","TX62":"TXK 27","XA01":"TXK 27","XA46":"TXK 27","XA50":"TXK 27","XS02":"TXK 27","00TX":"TXK 27","0XS9":"TXK 27","10TS":"TXK 27","27TA":"TXK 27","38XA":"TXK 27","3TX1":"TXK 27","51TX":"TXK 27","5TX7":"TXK 27","5XS5":"TXK 27","60TA":"TXK 27","6X0":"TXK 27","K6X0":"TXK 27","71XA":"TXK 27","7TA7":"TXK 27","99X":"TXK 27","K99X":"TXK 27","KJSO":"TXK 27","JSO":"TXK 27","KRFI":"TXK 27","RFI":"TXK 27","KTYR":"TXK 27","TYR":"TXK 27","T25":"TXK 27","KT25":"TXK 27","TA37":"TXK 27","TA61":"TXK 27","TE18":"TXK 27","TE91":"TXK 27","TX1":"TXK 27","KTX1":"TXK 27","TX40":"TXK 27","TX85":"TXK 27","XA28":"TXK 27","XA58":"TXK 27","XS91":"TXK 27"};
+
+  function recordUsesGGGApproach(record) {
+    const apps = Array.isArray(record && record.apps) ? record.apps : [];
+    const appText = apps.map((app) => String(app || "").toUpperCase()).join(" ");
+    return appText.includes("GGG APP") || appText.includes("LONGVIEW APP");
+  }
+
+  function applyGGGAppSectorDefaults() {
+    Object.keys(GGG_APP_SECTOR_DEFAULTS).forEach((ident) => {
+      const found = lookupRecord(ident);
+      if (!found || !found.record || !recordUsesGGGApproach(found.record)) return;
+
+      found.record.record_type = "AIRPORT";
+      found.record.sectors = ["TXK 27"];
+      found.record.areas = ["DAL"];
+
+      if (ident === "60TA") {
+        found.record.airport_name = "UT Health Henderson Heliport";
+        found.record.lat = 32.161186;
+        found.record.lon = -94.794822;
+        found.record.nearest_wx = "RFI";
+      }
+    });
+  }
+
   function applyBuiltInAirportCorrections() {
     const records = getRecords();
 
@@ -507,6 +534,8 @@
     });
 
     applyD10OutageSectorDefaults();
+
+    applyGGGAppSectorDefaults();
 
   }
 
