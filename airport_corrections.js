@@ -403,7 +403,7 @@
   }
 
   
-  const GGG_APP_SECTOR_DEFAULTS = {"07F":"UIM 83","K07F":"UIM 83","0TX3":"UIM 83","11TA":"UIM 83","16TE":"UIM 83","18TE":"UIM 83","1TT8":"UIM 83","1TX9":"UIM 83","2XA7":"UIM 83","3F9":"UIM 83","K3F9":"UIM 83","3TS0":"UIM 83","3XS6":"UIM 83","4TX6":"UIM 83","4XA9":"UIM 83","59XA":"UIM 83","61TA":"UIM 83","6F7":"UIM 83","K6F7":"UIM 83","6TX3":"UIM 83","81TX":"UIM 83","91XA":"UIM 83","96TA":"UIM 83","96TS":"UIM 83","F51":"UIM 83","KF51":"UIM 83","KGGG":"UIM 83","GGG":"UIM 83","KJDD":"UIM 83","JDD":"UIM 83","KJXI":"UIM 83","JXI":"UIM 83","TA27":"UIM 83","TX09":"UIM 83","TX62":"UIM 83","XA01":"UIM 83","XA46":"UIM 83","XA50":"UIM 83","XS02":"UIM 83","00TX":"UIM 83","0XS9":"DON 29","10TS":"MLU 30","27TA":"MLU 30","38XA":"DON 29","3TX1":"DON 29","51TX":"UIM 83","5TX7":"UIM 83","5XS5":"UIM 83","60TA":"MLU 30","6X0":"DON 29","K6X0":"DON 29","71XA":"DON 29","7TA7":"DON 29","99X":"DON 29","K99X":"DON 29","KJSO":"DON 29","JSO":"DON 29","KRFI":"MLU 30","RFI":"MLU 30","KTYR":"DON 29","TYR":"DON 29","T25":"DON 29","KT25":"DON 29","TA37":"DON 29","TA61":"UIM 83","TE18":"UIM 83","TE91":"DON 29","TX1":"DON 29","KTX1":"DON 29","TX40":"DON 29","TX85":"DON 29","XA28":"DON 29","XA58":"DON 29","XS91":"DON 29"};
+  const GGG_APP_SECTOR_DEFAULTS = {"07F":"UIM 83","K07F":"UIM 83","0TX3":"UIM 83","11TA":"UIM 83","16TE":"UIM 83","18TE":"UIM 83","1TT8":"UIM 83","1TX9":"UIM 83","2XA7":"UIM 83","3F9":"UIM 83","K3F9":"UIM 83","3TS0":"UIM 83","3XS6":"UIM 83","4TX6":"UIM 83","4XA9":"UIM 83","59XA":"UIM 83","61TA":"UIM 83","6F7":"UIM 83","K6F7":"UIM 83","6TX3":"UIM 83","81TX":"UIM 83","91XA":"UIM 83","96TA":"UIM 83","96TS":"UIM 83","F51":"UIM 83","KF51":"UIM 83","KGGG":"UIM 83","GGG":"UIM 83","KJDD":"UIM 83","JDD":"UIM 83","KJXI":"UIM 83","JXI":"UIM 83","TA27":"UIM 83","TX09":"UIM 83","TX62":"UIM 83","XA01":"UIM 83","XA46":"UIM 83","XA50":"UIM 83","XS02":"UIM 83","00TX":"UIM 83","0XS9":"DON 29","10TS":"MLU 30","27TA":"MLU 30","38XA":"DON 29","3TX1":"DON 29","51TX":"UIM 83","5TX7":"UIM 83","5XS5":"UIM 83","60TA":"MLU 30","6X0":"DON 29","K6X0":"DON 29","71XA":"DON 29","7TA7":"DON 29","K99X":"DON 29","KJSO":"DON 29","JSO":"DON 29","KRFI":"MLU 30","RFI":"MLU 30","KTYR":"DON 29","TYR":"DON 29","T25":"DON 29","KT25":"DON 29","TA37":"DON 29","TA61":"UIM 83","TE18":"UIM 83","TE91":"DON 29","TX1":"DON 29","KTX1":"DON 29","TX40":"DON 29","TX85":"DON 29","XA28":"DON 29","XA58":"DON 29","XS91":"DON 29"};
 
   function recordUsesGGGApproach(record) {
     const apps = Array.isArray(record && record.apps) ? record.apps : [];
@@ -598,6 +598,32 @@
     });
   }
 
+  
+  function removeInvalid99XPlaceholder() {
+    const records = getRecords();
+
+    if (records["99X"]) {
+      delete records["99X"];
+    }
+
+    const found = lookupRecord("99XS");
+    if (!found || !found.record) return;
+
+    found.record.record_type = "AIRPORT";
+    found.record.airport_name = "Blue Ridge Airport";
+    found.record.lat = 33.294014;
+    found.record.lon = -96.446889;
+    if (!Array.isArray(found.record.sectors) || !found.record.sectors.length) {
+      found.record.sectors = ["SEA 37"];
+    }
+    if (!Array.isArray(found.record.areas) || !found.record.areas.length) {
+      found.record.areas = ["BYP"];
+    }
+    if (!String(found.record.nearest_wx || "").trim()) {
+      found.record.nearest_wx = "SWI";
+    }
+  }
+
   function applyBuiltInAirportCorrections() {
     const records = getRecords();
 
@@ -715,6 +741,8 @@
     applyApproachOnlySectorDefaults();
 
     applyDirectAirportOverrides();
+
+    removeInvalid99XPlaceholder();
 
   }
 
