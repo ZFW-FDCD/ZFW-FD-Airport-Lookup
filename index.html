@@ -1078,6 +1078,18 @@
         return ["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type);
       }
 
+      function shouldHighlightOmicWeather(record, ident, weatherValue) {
+        const cleanIdent = normalizeOmicIdent(ident);
+        const type = String((record && (record.record_type || record.type)) || "").toUpperCase();
+        const hasWeather = Boolean(weatherValue && weatherValue !== "—");
+
+        if (!hasWeather) return false;
+        if (["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type)) return true;
+        if (/^[A-Z0-9]{5}$/.test(cleanIdent) && record && record.nearest_wx) return true;
+
+        return false;
+      }
+
       function isAirportRecord(record) {
         if (!record) return false;
         const type = String(record.record_type || record.type || "").toUpperCase();
@@ -1576,15 +1588,14 @@
 
         setOmicText("omicArea", splitOutput(areas));
 
-        if (omicIsSharedAirportNavIdent(searched)) {
-          const airportWx = omicAirportWeatherForIdent(searched);
-          setOmicText("omicWeather", airportWx || nearestWeather(record));
-        } else {
-          setOmicText("omicWeather", nearestWeather(record));
+        const omicWeatherValue = omicIsSharedAirportNavIdent(searched)
+          ? (omicAirportWeatherForIdent(searched) || nearestWeather(record))
+          : nearestWeather(record);
 
-          if (navRecord) {
-            highlightOmicBox("omicWeather", "green");
-          }
+        setOmicText("omicWeather", omicWeatherValue);
+
+        if (shouldHighlightOmicWeather(record, searched, omicWeatherValue)) {
+          highlightOmicBox("omicWeather", "green");
         }
 
         if (!navRecord && !apps.length) {
