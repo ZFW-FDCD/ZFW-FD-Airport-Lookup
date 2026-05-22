@@ -1538,11 +1538,17 @@
         if (result.adjacent) {
           const center = record.center || "—";
           const adjacentWeather = record.nearest_wx ? normalizeOmicIdent(record.nearest_wx) : "—";
+          const adjacentNavRecord = isNavRecord(record);
+
           setOmicText("omicSector", "OUTSIDE OF ZFW");
           setOmicText("omicApp", center + " Flight Data Number: " + (record.fdcd || "—"));
           setOmicText("omicArea", center);
           setOmicText("omicWeather", adjacentWeather);
-          highlightOmicBox("omicApp", "green");
+
+          if (!adjacentNavRecord) {
+            highlightOmicBox("omicApp", "green");
+          }
+
           if (record.nearest_wx) highlightOmicBox("omicWeather", "green");
           setOmicStatus(searched + " found outside ZFW", "var(--amber)");
           scheduleOmicClear();
@@ -1551,7 +1557,11 @@
 
         setOmicText("omicSector", splitSectorOutput(sectors));
 
-        if (apps.length) {
+        if (navRecord) {
+          // Navaids do not have a clearance-delivery approach handoff.
+          // Keep this box neutral even when the identifier was custom-added or shares an airport identifier.
+          setOmicText("omicApp", "—");
+        } else if (apps.length) {
           const appDetails = buildOmicApproachDetails(apps, vscs, contacts, hours);
           setOmicText("omicApp", appDetails.approachValue || "—");
 
