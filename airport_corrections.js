@@ -768,6 +768,51 @@
     setFormValue(form, "lon", Number.isFinite(Number(record.lon)) ? String(record.lon) : "");
   }
 
+  const AIRPORT_PREFILL_FIELDS = [
+    "airportName",
+    "sectors",
+    "areas",
+    "apps",
+    "vscs",
+    "contacts",
+    "hours",
+    "lat",
+    "lon"
+  ];
+
+  function isCompleteAirportCorrectionIdent(value) {
+    const ident = normalizeIdent(value);
+    return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
+  }
+
+  function correctionFormDataFieldsAreBlank(form) {
+    return AIRPORT_PREFILL_FIELDS.every((fieldName) => {
+      return String(getFormValue(form, fieldName) || "").trim() === "";
+    });
+  }
+
+  function prefillAirportCorrectionForm(form, options) {
+    options = options || {};
+
+    const typedIdent = normalizeIdent(getFormValue(form, "identifier"));
+    if (!typedIdent || !isCompleteAirportCorrectionIdent(typedIdent)) return false;
+
+    const found = lookupRecord(typedIdent);
+    if (!found || !found.record) return false;
+
+    const alreadyLoaded = form.dataset.prefilledAirportIdent === found.ident;
+    if (!options.force && alreadyLoaded) return false;
+
+    // Do not overwrite fields the user has already started editing.
+    // Normal flow is blank form -> type identifier -> auto-fill current record.
+    if (!options.force && !correctionFormDataFieldsAreBlank(form)) return false;
+
+    fillFormFromRecord(form, found.ident, found.record);
+    form.dataset.prefilledAirportIdent = found.ident;
+    showMessage(found.ident + " loaded from current records. Amend only the fields that need to change.", false);
+    return true;
+  }
+
   function clearForm(form) {
     Array.from(form.elements).forEach((element) => {
       if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
@@ -787,17 +832,15 @@
     showMessage("", false);
 
     form.dataset.mode = "combined";
+    delete form.dataset.prefilledAirportIdent;
+
     title.textContent = "Add/Amend Airport";
     submitButton.textContent = "Save Airport";
 
     const currentIdent = normalizeIdent(currentSearch ? currentSearch.value : "");
     if (currentIdent) {
-      const found = lookupRecord(currentIdent);
-      if (found) {
-        fillFormFromRecord(form, found.ident, found.record);
-      } else {
-        setFormValue(form, "identifier", currentIdent);
-      }
+      setFormValue(form, "identifier", currentIdent);
+      prefillAirportCorrectionForm(form, { force: true });
     }
 
     modal.setAttribute("aria-hidden", "false");
@@ -1077,6 +1120,26 @@
         event.preventDefault();
         correctionForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
       });
+    }
+
+    if (correctionForm && correctionForm.dataset.airportPrefillBound !== "true") {
+      correctionForm.dataset.airportPrefillBound = "true";
+
+      const identifierField = correctionForm.elements.identifier || correctionForm.querySelector("[name=\"identifier\"]");
+
+      if (identifierField) {
+        identifierField.addEventListener("input", function () {
+          const normalized = normalizeIdent(identifierField.value);
+          if (identifierField.value !== normalized) identifierField.value = normalized;
+          prefillAirportCorrectionForm(correctionForm);
+        });
+
+        identifierField.addEventListener("change", function () {
+          const normalized = normalizeIdent(identifierField.value);
+          if (identifierField.value !== normalized) identifierField.value = normalized;
+          prefillAirportCorrectionForm(correctionForm);
+        });
+      }
     }
 
     document.getElementById("correctionForm").addEventListener("submit", function (event) {
