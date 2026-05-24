@@ -169,9 +169,15 @@
         let nextValue = value || "";
 
         if (element.tagName === "SELECT" && element.name === "sectors") {
-          const normalized = normalizeSector(nextValue);
-          const hasOption = Array.from(element.options || []).some((option) => option.value === normalized);
-          nextValue = hasOption ? normalized : "";
+          nextValue = normalizeSector(nextValue);
+          const hasOption = Array.from(element.options || []).some((option) => option.value === nextValue);
+
+          if (nextValue && !hasOption) {
+            const option = document.createElement("option");
+            option.value = nextValue;
+            option.textContent = nextValue;
+            element.appendChild(option);
+          }
         }
 
         element.value = nextValue;
@@ -823,14 +829,13 @@
     if (!typedIdent || !isCompleteAirportCorrectionIdent(typedIdent)) return false;
 
     const found = lookupRecord(typedIdent);
-    if (!found || !found.record) return false;
+    if (!found || !found.record) {
+      delete form.dataset.prefilledAirportIdent;
+      return false;
+    }
 
     const alreadyLoaded = form.dataset.prefilledAirportIdent === found.ident;
     if (!options.force && alreadyLoaded) return false;
-
-    // Do not overwrite fields the user has already started editing.
-    // Normal flow is blank form -> type identifier -> auto-fill current record.
-    if (!options.force && !correctionFormDataFieldsAreBlank(form)) return false;
 
     fillFormFromRecord(form, found.ident, found.record);
     form.dataset.prefilledAirportIdent = found.ident;
@@ -1045,7 +1050,7 @@
     modal.innerHTML = `
       <div class="correction-panel" role="dialog" aria-modal="true" aria-labelledby="correctionModalTitle">
         <h2 id="correctionModalTitle">Airport Correction</h2>
-        <p>Add or amend a local airport record. Separate multiple sectors, apps, VSCS entries, contacts, or hours with commas.</p>
+        <p>Add or amend a local airport record. Existing records will load current data, including stored coordinates and sector. Separate multiple apps, VSCS entries, contacts, or hours with commas.</p>
 
         <form id="correctionForm" novalidate>
           <div class="correction-grid">
@@ -1174,13 +1179,19 @@
         identifierField.addEventListener("input", function () {
           const normalized = normalizeIdent(identifierField.value);
           if (identifierField.value !== normalized) identifierField.value = normalized;
-          prefillAirportCorrectionForm(correctionForm);
+
+          if (normalized !== correctionForm.dataset.prefilledAirportIdent) {
+            prefillAirportCorrectionForm(correctionForm, { force: true });
+          }
         });
 
         identifierField.addEventListener("change", function () {
           const normalized = normalizeIdent(identifierField.value);
           if (identifierField.value !== normalized) identifierField.value = normalized;
-          prefillAirportCorrectionForm(correctionForm);
+
+          if (normalized !== correctionForm.dataset.prefilledAirportIdent) {
+            prefillAirportCorrectionForm(correctionForm, { force: true });
+          }
         });
       }
     }
