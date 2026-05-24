@@ -166,7 +166,15 @@
       const byElements = form.elements ? form.elements[name] : null;
       const element = byElements || form.querySelector('[name="' + name + '"]');
       if (element && typeof element.value !== "undefined") {
-        element.value = value || "";
+        let nextValue = value || "";
+
+        if (element.tagName === "SELECT" && element.name === "sectors") {
+          const normalized = normalizeSector(nextValue);
+          const hasOption = Array.from(element.options || []).some((option) => option.value === normalized);
+          nextValue = hasOption ? normalized : "";
+        }
+
+        element.value = nextValue;
         return;
       }
     }
@@ -295,6 +303,9 @@
 
   function makeRecordFromForm(form) {
     const ident = normalizeIdent(getFormValue(form, "identifier"));
+    const existing = lookupRecord(ident);
+    const existingRecord = existing && existing.record ? existing.record : {};
+
     const sectors = normalizeSectors(getFormValue(form, ["sectors", "sector"]));
     const areas = normalizeAreas(getFormValue(form, ["areas", "area"]), sectors);
     const apps = normalizeApps(getFormValue(form, ["apps", "app", "approach"]));
@@ -304,25 +315,39 @@
 
     const latText = String(getFormValue(form, "lat") || "").trim();
     const lonText = String(getFormValue(form, "lon") || "").trim();
+    const airportName = String(getFormValue(form, "airportName") || "").trim();
 
-    const record = {
-      record_type: "AIRPORT",
-      sectors,
-      areas,
-      apps,
-      vscs,
-      contacts,
-      hours,
-      airport_name: String(getFormValue(form, "airportName") || "").trim()
-    };
+    const record = JSON.parse(JSON.stringify(existingRecord || {}));
+
+    record.record_type = "AIRPORT";
+    record.sectors = sectors.length ? sectors : (Array.isArray(existingRecord.sectors) ? existingRecord.sectors.slice() : []);
+    record.areas = areas.length ? areas : normalizeAreas("", record.sectors);
+    record.apps = apps;
+    record.vscs = vscs;
+    record.contacts = contacts;
+    record.hours = hours;
+    record.airport_name = airportName || existingRecord.airport_name || "";
 
     if (latText !== "") {
       const latValue = Number(latText);
-      record.lat = Number.isFinite(latValue) ? Math.round(latValue * 10000) / 10000 : NaN;
+      record.lat = Number.isFinite(latValue) ? Math.round(latValue * 1000000) / 1000000 : NaN;
+    } else if (Number.isFinite(Number(existingRecord.lat))) {
+      record.lat = existingRecord.lat;
+    } else {
+      delete record.lat;
     }
+
     if (lonText !== "") {
       const lonValue = Number(lonText);
-      record.lon = Number.isFinite(lonValue) ? Math.round(lonValue * 10000) / 10000 : NaN;
+      record.lon = Number.isFinite(lonValue) ? Math.round(lonValue * 1000000) / 1000000 : NaN;
+    } else if (Number.isFinite(Number(existingRecord.lon))) {
+      record.lon = existingRecord.lon;
+    } else {
+      delete record.lon;
+    }
+
+    if (!String(record.nearest_wx || "").trim() && String(existingRecord.nearest_wx || "").trim()) {
+      record.nearest_wx = existingRecord.nearest_wx;
     }
 
     return { ident, record };
@@ -815,7 +840,7 @@
 
   function clearForm(form) {
     Array.from(form.elements).forEach((element) => {
-      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.tagName === "SELECT") {
         element.value = "";
       }
     });
@@ -1037,8 +1062,26 @@
 
             <div class="correction-field">
               <label for="corrSectors">Sector</label>
-              <input id="corrSectors" name="sectors" type="text" placeholder="LBB L, LBB-L, LBB 64, or 64" />
-              <div class="correction-help">Common shorthand is accepted and normalized.</div>
+              <select id="corrSectors" name="sectors">
+                <option value="">Select sector</option>
+                <option value="OKC 35">OKC-L 35</option>
+                <option value="SPS 34">SPS-L 34</option>
+                <option value="UKW 75">UKW-L 75</option>
+                <option value="DON 29">DON-L 29</option>
+                <option value="MLU 30">MLU-L 30</option>
+                <option value="FRI 53">FRI-L 53</option>
+                <option value="MLC 38">MLC-L 38</option>
+                <option value="SEA 37">SEA-L 37</option>
+                <option value="LBB 64">LBB-L 64</option>
+                <option value="POS 32">POS-L 32</option>
+                <option value="ACT 96">ACT-L 96</option>
+                <option value="TXK 27">TXK-L 27</option>
+                <option value="UIM 83">UIM-L 83</option>
+                <option value="ABI 63">ABI-L 63</option>
+                <option value="MAF 40">MAF-L 40</option>
+                <option value="EDN 62">EDN-L 62</option>
+              </select>
+              <div class="correction-help">Select the ZFW low sector. The area will derive from this field when left blank.</div>
             </div>
 
             <div class="correction-field">
@@ -1071,13 +1114,13 @@
             <div class="correction-field">
               <label for="corrLat">Latitude</label>
               <input id="corrLat" name="lat" type="number" step="0.0001" placeholder="33.1234" />
-              <div class="correction-help">Approximation is okay. Four decimals is enough.</div>
+              <div class="correction-help">Optional when amending an existing airport. Existing coordinates will be kept if left blank.</div>
             </div>
 
             <div class="correction-field">
               <label for="corrLon">Longitude</label>
               <input id="corrLon" name="lon" type="number" step="0.0001" placeholder="-101.1234" />
-              <div class="correction-help">Approximation is okay. Four decimals is enough.</div>
+              <div class="correction-help">Optional when amending an existing airport. Existing coordinates will be kept if left blank.</div>
             </div>
           </div>
 
@@ -1154,7 +1197,7 @@
       }
 
       if (Number.isNaN(record.lat) || Number.isNaN(record.lon)) {
-        showMessage("Latitude and longitude must be valid numbers when entered. APP, contact, VSCS, and hours may be left blank when none apply.", true);
+        showMessage("Latitude and longitude are optional when amending, but must be valid numbers if entered. APP, contact, VSCS, and hours may be left blank when none apply.", true);
         return;
       }
 
