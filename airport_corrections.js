@@ -2229,3 +2229,289 @@ const corrections = loadCorrections();
   }
 })();
 
+
+/* Add/Amend Airport prefill status/search fallback */
+(function () {
+  "use strict";
+
+  function cleanIdent(value) {
+    return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function isLookupIdent(value) {
+    const ident = cleanIdent(value);
+    return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
+  }
+
+  function store() {
+    return (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+  }
+
+  function aliasFor(ident) {
+    ident = cleanIdent(ident);
+    if (/^K[A-Z0-9]{3}$/.test(ident)) return ident.slice(1);
+    if (/^[A-Z0-9]{3}$/.test(ident)) return "K" + ident;
+    return "";
+  }
+
+  function findRecord(ident) {
+    const records = store();
+    ident = cleanIdent(ident);
+
+    if (records[ident]) return { ident: ident, record: records[ident] };
+
+    const alias = aliasFor(ident);
+    if (alias && records[alias]) return { ident: alias, record: records[alias] };
+
+    return null;
+  }
+
+  function textOf(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.textContent || "").trim() : "";
+  }
+
+  function getBestCandidateIdent(form) {
+    const formIdent = form && form.elements.identifier ? cleanIdent(form.elements.identifier.value) : "";
+    if (isLookupIdent(formIdent)) return formIdent;
+
+    const search = document.getElementById("airportInput");
+    const searchIdent = search ? cleanIdent(search.value) : "";
+    if (isLookupIdent(searchIdent)) return searchIdent;
+
+    const globalIdent = cleanIdent(window.ZFW_LAST_FDCS_LOOKUP_IDENT || window.ZFW_LAST_FDCS_IDENT || "");
+    if (isLookupIdent(globalIdent)) return globalIdent;
+
+    const status = textOf("status");
+    let match = status.match(/\b([A-Z0-9]{3,5})\s+found\b/i);
+    if (match && isLookupIdent(match[1])) return cleanIdent(match[1]);
+
+    match = status.match(/\b([A-Z0-9]{3,5})\b/);
+    if (match && isLookupIdent(match[1]) && findRecord(match[1])) return cleanIdent(match[1]);
+
+    return "";
+  }
+
+  function sectorKey(value) {
+    const text = String(value || "").trim().toUpperCase();
+    const match = text.match(/^([A-Z]{2,4})[\s-]*L?[\s-]*(\d{2})$/);
+    if (match) return match[1] + match[2];
+    return text.replace(/[^A-Z0-9]/g, "");
+  }
+
+  function sectorDisplay(value) {
+    const text = String(value || "").trim().toUpperCase();
+    const match = text.match(/^([A-Z]{2,4})[\s-]*L?[\s-]*(\d{2})$/);
+    return match ? match[1] + "-L " + match[2] : text;
+  }
+
+  function setSelect(select, value, label) {
+    if (!select) return false;
+
+    const valueKey = sectorKey(value);
+    let option = null;
+
+    Array.from(select.options || []).forEach(function (candidate) {
+      if (sectorKey(candidate.value) === valueKey || sectorKey(candidate.textContent) === valueKey) {
+        option = candidate;
+      }
+    });
+
+    if (!option && value) {
+      option = document.createElement("option");
+      option.value = value;
+      option.textContent = label || value;
+      select.appendChild(option);
+    }
+
+    if (option) {
+      select.value = option.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
+    return false;
+  }
+
+  function setValue(form, names, value, label) {
+    const list = Array.isArray(names) ? names : [names];
+
+    for (const name of list) {
+      const element = (form.elements && form.elements[name]) || form.querySelector('[name="' + name + '"], #' + name);
+      if (!element || typeof element.value === "undefined") continue;
+
+      if (element.tagName === "SELECT") {
+        return setSelect(element, value, label);
+      }
+
+      element.value = value == null ? "" : String(value);
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
+    return false;
+  }
+
+  function ensureHidden(form, name, value) {
+    let field = form.querySelector('input[type="hidden"][name="' + name + '"]') || form.querySelector('input[name="' + name + '"]');
+
+    if (!field) {
+      field = document.createElement("input");
+      field.type = "hidden";
+      field.name = name;
+      form.appendChild(field);
+    }
+
+    field.value = value == null ? "" : String(value);
+    return field;
+  }
+
+  function first(list) {
+    return Array.isArray(list) && list.length ? list[0] : "";
+  }
+
+  function join(list) {
+    return Array.isArray(list) ? list.join(", ") : "";
+  }
+
+  function populate(force) {
+    const modal = document.getElementById("correctionModal");
+    const form = document.getElementById("correctionForm");
+
+    if (!modal || !form || modal.getAttribute("aria-hidden") === "true") return false;
+
+    const candidate = getBestCandidateIdent(form);
+    if (!candidate) return false;
+
+    const found = findRecord(candidate);
+    if (!found || !found.record) return false;
+
+    if (!force && form.dataset.statusFallbackPrefilledIdent === found.ident) return true;
+
+    const record = found.record || {};
+    const sector = first(record.sectors);
+    const app = first(record.apps) || "N/A";
+
+    setValue(form, "identifier", found.ident);
+    setValue(form, "airportName", record.airport_name || "");
+    setValue(form, ["sectors", "sector", "corrSectors"], sector, sectorDisplay(sector));
+    setValue(form, ["areas", "area"], join(record.areas));
+    setValue(form, ["apps", "app", "approach"], app, app);
+    setValue(form, "vscs", join(record.vscs));
+    setValue(form, ["contacts", "contact"], join(record.contacts));
+    setValue(form, "hours", join(record.hours));
+
+    if (Number.isFinite(Number(record.lat))) {
+      ensureHidden(form, "lat", record.lat);
+      setValue(form, "lat", record.lat);
+    }
+
+    if (Number.isFinite(Number(record.lon))) {
+      ensureHidden(form, "lon", record.lon);
+      setValue(form, "lon", record.lon);
+    }
+
+    const gps = document.getElementById("airportGpsPaste");
+    if (gps && Number.isFinite(Number(record.lat)) && Number.isFinite(Number(record.lon))) {
+      gps.value = record.lat + ", " + record.lon;
+    }
+
+    form.dataset.statusFallbackPrefilledIdent = found.ident;
+    form.dataset.robustPrefilledAirportIdent = found.ident;
+    form.dataset.prefilledAirportIdent = found.ident;
+
+    const message = document.getElementById("correctionMessage");
+    if (message) {
+      message.textContent = found.ident + " loaded from current records. Amend only the fields that need to change.";
+      message.className = "correction-message";
+    }
+
+    return true;
+  }
+
+  function runSoon(force) {
+    [0, 50, 125, 250, 500, 900, 1400].forEach(function (delay) {
+      setTimeout(function () { populate(force); }, delay);
+    });
+  }
+
+  function bind() {
+    const modal = document.getElementById("correctionModal");
+    const form = document.getElementById("correctionForm");
+    const button = document.getElementById("amendAirportButton");
+    const search = document.getElementById("airportInput");
+
+    if (button && button.dataset.statusFallbackPrefillBound !== "true") {
+      button.dataset.statusFallbackPrefillBound = "true";
+      button.addEventListener("click", function () {
+        runSoon(true);
+      }, true);
+    }
+
+    if (search && search.dataset.lastFdcsLookupTrackerBound !== "true") {
+      search.dataset.lastFdcsLookupTrackerBound = "true";
+      search.addEventListener("input", function () {
+        const ident = cleanIdent(search.value);
+        if (isLookupIdent(ident) && findRecord(ident)) {
+          window.ZFW_LAST_FDCS_LOOKUP_IDENT = ident;
+        }
+      }, true);
+    }
+
+    if (form && form.dataset.statusFallbackIdentifierBound !== "true") {
+      form.dataset.statusFallbackIdentifierBound = "true";
+      form.addEventListener("input", function (event) {
+        if (event.target && event.target.name === "identifier") {
+          event.target.value = cleanIdent(event.target.value);
+          delete form.dataset.statusFallbackPrefilledIdent;
+          runSoon(true);
+        }
+      }, true);
+      form.addEventListener("change", function (event) {
+        if (event.target && event.target.name === "identifier") {
+          event.target.value = cleanIdent(event.target.value);
+          delete form.dataset.statusFallbackPrefilledIdent;
+          runSoon(true);
+        }
+      }, true);
+    }
+
+    if (modal && modal.dataset.statusFallbackObserverBound !== "true") {
+      modal.dataset.statusFallbackObserverBound = "true";
+      if (window.MutationObserver) {
+        new MutationObserver(function () {
+          if (modal.getAttribute("aria-hidden") === "false") {
+            const form = document.getElementById("correctionForm");
+            if (form) delete form.dataset.statusFallbackPrefilledIdent;
+            runSoon(true);
+          }
+        }).observe(modal, { attributes: true, attributeFilter: ["aria-hidden"] });
+      }
+    }
+  }
+
+  function boot() {
+    bind();
+
+    let count = 0;
+    const timer = setInterval(function () {
+      bind();
+      const modal = document.getElementById("correctionModal");
+      if (modal && modal.getAttribute("aria-hidden") === "false") runSoon(false);
+      count += 1;
+      if (count > 60) clearInterval(timer);
+    }, 250);
+  }
+
+  window.ZFW_PREFILL_AIRPORT_AMEND_FORM_NOW = function () {
+    return populate(true);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
