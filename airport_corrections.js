@@ -1974,3 +1974,258 @@ const corrections = loadCorrections();
   }
 })();
 
+
+/* Add/Amend Airport robust prefill finalizer */
+(function () {
+  "use strict";
+
+  function normalizeIdent(value) {
+    return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function records() {
+    return (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+  }
+
+  function aliasForIdent(ident) {
+    ident = normalizeIdent(ident);
+    if (/^K[A-Z0-9]{3}$/.test(ident)) return ident.slice(1);
+    if (/^[A-Z0-9]{3}$/.test(ident)) return "K" + ident;
+    return "";
+  }
+
+  function findRecord(ident) {
+    const clean = normalizeIdent(ident);
+    const store = records();
+
+    if (store[clean]) return { ident: clean, record: store[clean] };
+
+    const alias = aliasForIdent(clean);
+    if (alias && store[alias]) return { ident: alias, record: store[alias] };
+
+    return null;
+  }
+
+  function sectorKey(value) {
+    const text = String(value || "").trim().toUpperCase();
+    const match = text.match(/^([A-Z]{2,4})[\s-]*L?[\s-]*(\d{2})$/);
+    if (match) return match[1] + match[2];
+    return text.replace(/[^A-Z0-9]/g, "");
+  }
+
+  function sectorDisplay(value) {
+    const text = String(value || "").trim().toUpperCase();
+    const match = text.match(/^([A-Z]{2,4})[\s-]*L?[\s-]*(\d{2})$/);
+    if (match) return match[1] + "-L " + match[2];
+    return text;
+  }
+
+  function selectMatchingOption(select, value, displayValue) {
+    if (!select) return;
+
+    const desired = String(value || "").trim();
+    const desiredKey = sectorKey(desired);
+    let match = null;
+
+    Array.from(select.options || []).forEach(function (option) {
+      if (sectorKey(option.value) === desiredKey || sectorKey(option.textContent) === desiredKey) {
+        match = option;
+      }
+    });
+
+    if (!match && desired) {
+      match = document.createElement("option");
+      match.value = desired;
+      match.textContent = displayValue || desired;
+      select.appendChild(match);
+    }
+
+    if (match) select.value = match.value;
+  }
+
+  function setField(form, names, value, displayValue) {
+    const nameList = Array.isArray(names) ? names : [names];
+
+    for (const name of nameList) {
+      const element = form.elements[name] || form.querySelector('[name="' + name + '"], #' + name);
+      if (!element || typeof element.value === "undefined") continue;
+
+      if (element.tagName === "SELECT") {
+        selectMatchingOption(element, value, displayValue);
+      } else {
+        element.value = value == null ? "" : String(value);
+      }
+
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }
+
+    return false;
+  }
+
+  function ensureHidden(form, name, value) {
+    let field = form.querySelector('input[name="' + name + '"]');
+
+    if (!field) {
+      field = document.createElement("input");
+      field.type = "hidden";
+      field.name = name;
+      form.appendChild(field);
+    }
+
+    field.value = value == null ? "" : String(value);
+    return field;
+  }
+
+  function first(list) {
+    return Array.isArray(list) && list.length ? list[0] : "";
+  }
+
+  function joined(list) {
+    return Array.isArray(list) ? list.join(", ") : "";
+  }
+
+  function fillAirportAmendForm(force) {
+    const form = document.getElementById("correctionForm");
+    const modal = document.getElementById("correctionModal");
+
+    if (!form || !modal || modal.getAttribute("aria-hidden") === "true") return false;
+
+    const identifierField = form.elements.identifier || form.querySelector('[name="identifier"]');
+    const typed = normalizeIdent(identifierField ? identifierField.value : "");
+
+    if (!typed) return false;
+
+    const found = findRecord(typed);
+    if (!found || !found.record) return false;
+
+    if (!force && form.dataset.robustPrefilledAirportIdent === found.ident) return true;
+
+    const record = found.record;
+    const sector = first(record.sectors);
+    const apps = Array.isArray(record.apps) ? record.apps : [];
+    const primaryApp = apps.length ? apps[0] : "N/A";
+
+    setField(form, "identifier", found.ident);
+    setField(form, "airportName", record.airport_name || "");
+    setField(form, ["sectors", "sector", "corrSectors"], sector, sectorDisplay(sector));
+    setField(form, ["areas", "area"], joined(record.areas));
+    setField(form, ["apps", "app", "approach"], primaryApp, primaryApp);
+    setField(form, "vscs", joined(record.vscs));
+    setField(form, ["contacts", "contact"], joined(record.contacts));
+    setField(form, "hours", joined(record.hours));
+
+    const hasLat = Number.isFinite(Number(record.lat));
+    const hasLon = Number.isFinite(Number(record.lon));
+
+    if (hasLat) {
+      setField(form, "lat", record.lat);
+      ensureHidden(form, "lat", record.lat);
+    }
+
+    if (hasLon) {
+      setField(form, "lon", record.lon);
+      ensureHidden(form, "lon", record.lon);
+    }
+
+    const gpsField = document.getElementById("airportGpsPaste");
+    if (gpsField && hasLat && hasLon) {
+      gpsField.value = record.lat + ", " + record.lon;
+      gpsField.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    form.dataset.robustPrefilledAirportIdent = found.ident;
+    form.dataset.prefilledAirportIdent = found.ident;
+
+    const message = document.getElementById("correctionMessage");
+    if (message) {
+      message.textContent = found.ident + " loaded from current records. Amend only the fields that need to change.";
+      message.className = "correction-message";
+    }
+
+    return true;
+  }
+
+  function schedulePrefill(force) {
+    [0, 75, 175, 350, 700].forEach(function (delay) {
+      setTimeout(function () {
+        fillAirportAmendForm(force);
+      }, delay);
+    });
+  }
+
+  function bindPrefillFinalizer() {
+    const form = document.getElementById("correctionForm");
+    const modal = document.getElementById("correctionModal");
+    const button = document.getElementById("amendAirportButton");
+
+    if (button && button.dataset.robustAirportPrefillClickBound !== "true") {
+      button.dataset.robustAirportPrefillClickBound = "true";
+      button.addEventListener("click", function () {
+        schedulePrefill(true);
+      }, true);
+    }
+
+    if (form && form.dataset.robustAirportPrefillBound !== "true") {
+      form.dataset.robustAirportPrefillBound = "true";
+
+      form.addEventListener("input", function (event) {
+        if (event.target && event.target.name === "identifier") {
+          event.target.value = normalizeIdent(event.target.value);
+          delete form.dataset.robustPrefilledAirportIdent;
+          schedulePrefill(true);
+        }
+      }, true);
+
+      form.addEventListener("change", function (event) {
+        if (event.target && event.target.name === "identifier") {
+          event.target.value = normalizeIdent(event.target.value);
+          delete form.dataset.robustPrefilledAirportIdent;
+          schedulePrefill(true);
+        }
+      }, true);
+    }
+
+    if (modal && modal.dataset.robustAirportPrefillObserved !== "true") {
+      modal.dataset.robustAirportPrefillObserved = "true";
+
+      if (window.MutationObserver) {
+        new MutationObserver(function () {
+          if (modal.getAttribute("aria-hidden") === "false") {
+            const form = document.getElementById("correctionForm");
+            if (form) delete form.dataset.robustPrefilledAirportIdent;
+            schedulePrefill(true);
+          }
+        }).observe(modal, { attributes: true, attributeFilter: ["aria-hidden"] });
+      }
+    }
+  }
+
+  function boot() {
+    bindPrefillFinalizer();
+
+    let runs = 0;
+    const timer = setInterval(function () {
+      bindPrefillFinalizer();
+
+      const modal = document.getElementById("correctionModal");
+      if (modal && modal.getAttribute("aria-hidden") === "false") {
+        schedulePrefill(false);
+      }
+
+      runs += 1;
+      if (runs > 30) clearInterval(timer);
+    }, 500);
+  }
+
+  window.ZFW_FORCE_AIRPORT_AMEND_PREFILL = function () {
+    return fillAirportAmendForm(true);
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
