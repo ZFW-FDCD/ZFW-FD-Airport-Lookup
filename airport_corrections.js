@@ -470,7 +470,7 @@
       vscs: ["351 (05)", "349 (03)"],
       contacts: [
         "E Dep: SHV APP VSCS 351 (05) TEL (318) 747-8519",
-        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4020"
+        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4005"
       ],
       hours: ["E Dep SHV 0000-2359", "W Dep GGG 0600-2200"]
     };
@@ -712,7 +712,7 @@
       vscs: ["351 (05)", "349 (03)"],
       contacts: [
         "E Dep: SHV APP VSCS 351 (05) TEL (318) 747-8519",
-        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4020"
+        "W Dep: GGG APP VSCS 349 (03) TEL (903) 643-4005"
       ],
       hours: ["E Dep SHV 0000-2359", "W Dep GGG 0600-2200"]
     };
