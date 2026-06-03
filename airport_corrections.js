@@ -2515,3 +2515,95 @@ const corrections = loadCorrections();
   }
 })();
 
+
+/* Force GGG / Longview APP phone correction across all records */
+(function () {
+  "use strict";
+
+  function fixText(value) {
+    return String(value || "")
+      .replace(/\(903\)\s*643[\s.-]*4020/g, "(903) 643-4005")
+      .replace(/903[\s.-]*643[\s.-]*4020/g, "903-643-4005")
+      .replace(/643[\s.-]*4020/g, "643-4005")
+      .replace(/\b4020\b/g, "4005");
+  }
+
+  function recordUsesGggApp(record) {
+    if (!record) return false;
+
+    const appText = (Array.isArray(record.apps) ? record.apps : [])
+      .join(" ")
+      .toUpperCase();
+
+    const contactText = (Array.isArray(record.contacts) ? record.contacts : [])
+      .join(" ")
+      .toUpperCase();
+
+    return appText.includes("GGG APP") ||
+      appText.includes("LONGVIEW") ||
+      contactText.includes("GGG APP") ||
+      contactText.includes("LONGVIEW") ||
+      contactText.includes("643-4020") ||
+      contactText.includes("643 4020") ||
+      contactText.includes("643.4020");
+  }
+
+  function fixRecord(record) {
+    if (!record || !recordUsesGggApp(record)) return false;
+
+    let changed = false;
+
+    ["contacts", "vscs", "hours", "apps"].forEach(function (field) {
+      if (!Array.isArray(record[field])) return;
+
+      record[field] = record[field].map(function (item) {
+        const fixed = fixText(item);
+        if (fixed !== item) changed = true;
+        return fixed;
+      });
+    });
+
+    return changed;
+  }
+
+  function fixStoredAirportCorrections() {
+    try {
+      const raw = localStorage.getItem("zfwAirportCorrections");
+      if (!raw) return;
+
+      const corrections = JSON.parse(raw);
+      let changed = false;
+
+      Object.keys(corrections || {}).forEach(function (ident) {
+        if (fixRecord(corrections[ident])) changed = true;
+      });
+
+      if (changed) {
+        localStorage.setItem("zfwAirportCorrections", JSON.stringify(corrections));
+      }
+    } catch (error) {
+      console.warn("Could not update stored GGG APP phone corrections.", error);
+    }
+  }
+
+  function applyGggLongviewPhone4005() {
+    const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+    Object.keys(records).forEach(function (ident) {
+      fixRecord(records[ident]);
+    });
+
+    fixStoredAirportCorrections();
+  }
+
+  window.ZFW_FORCE_GGG_APP_PHONE_4005 = applyGggLongviewPhone4005;
+
+  applyGggLongviewPhone4005();
+
+  let runs = 0;
+  const timer = setInterval(function () {
+    applyGggLongviewPhone4005();
+    runs += 1;
+    if (runs >= 60) clearInterval(timer);
+  }, 500);
+})();
+
