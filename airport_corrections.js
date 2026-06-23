@@ -2099,6 +2099,7 @@ const corrections = loadCorrections();
     const found = findRecord(typed);
     if (!found || !found.record) return false;
 
+    if (form.dataset.airportUserEditedFields === "true" && form.dataset.robustPrefilledAirportIdent === found.ident) return true;
     if (!force && form.dataset.robustPrefilledAirportIdent === found.ident) return true;
 
     const record = found.record;
@@ -2387,6 +2388,7 @@ const corrections = loadCorrections();
     const found = findRecord(candidate);
     if (!found || !found.record) return false;
 
+    if (form.dataset.airportUserEditedFields === "true" && form.dataset.statusFallbackPrefilledIdent === found.ident) return true;
     if (!force && form.dataset.statusFallbackPrefilledIdent === found.ident) return true;
 
     const record = found.record || {};
@@ -2605,5 +2607,120 @@ const corrections = loadCorrections();
     runs += 1;
     if (runs >= 60) clearInterval(timer);
   }, 500);
+})();
+
+
+/* Force 5TX7 sector correction */
+(function () {
+  "use strict";
+
+  function apply5tx7SectorCorrection() {
+    const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+
+    ["5TX7", "K5TX7"].forEach(function (ident) {
+      const record = records[ident];
+      if (!record) return;
+
+      record.record_type = "AIRPORT";
+      record.sectors = ["DON 29"];
+      record.areas = ["CQY"];
+    });
+
+    try {
+      const raw = localStorage.getItem("zfwAirportCorrections");
+      if (!raw) return;
+
+      const corrections = JSON.parse(raw);
+      let changed = false;
+
+      ["5TX7", "K5TX7"].forEach(function (ident) {
+        if (!corrections[ident]) return;
+        corrections[ident].record_type = "AIRPORT";
+        corrections[ident].sectors = ["DON 29"];
+        corrections[ident].areas = ["CQY"];
+        changed = true;
+      });
+
+      if (changed) {
+        localStorage.setItem("zfwAirportCorrections", JSON.stringify(corrections));
+      }
+    } catch (error) {
+      console.warn("Could not update stored 5TX7 sector correction.", error);
+    }
+  }
+
+  window.ZFW_FORCE_5TX7_DON29 = apply5tx7SectorCorrection;
+
+  apply5tx7SectorCorrection();
+
+  let runs = 0;
+  const timer = setInterval(function () {
+    apply5tx7SectorCorrection();
+    runs += 1;
+    if (runs >= 60) clearInterval(timer);
+  }, 500);
+})();
+
+
+/* Add/Amend form user-edit protection */
+(function () {
+  "use strict";
+
+  function bindAirportAmendUserEditProtection() {
+    const form = document.getElementById("correctionForm");
+    if (!form || form.dataset.userEditProtectionBound === "true") return;
+
+    form.dataset.userEditProtectionBound = "true";
+
+    function markEdited(event) {
+      const target = event.target;
+      if (!target || !target.name || target.name === "identifier") return;
+
+      form.dataset.airportUserEditedFields = "true";
+
+      const ident =
+        form.dataset.prefilledAirportIdent ||
+        form.dataset.robustPrefilledAirportIdent ||
+        form.dataset.statusFallbackPrefilledIdent ||
+        "";
+
+      if (ident) {
+        form.dataset.robustPrefilledAirportIdent = ident;
+        form.dataset.statusFallbackPrefilledIdent = ident;
+        form.dataset.prefilledAirportIdent = ident;
+      }
+    }
+
+    form.addEventListener("change", markEdited, true);
+    form.addEventListener("input", markEdited, true);
+
+    const identifier = form.elements.identifier || form.querySelector('[name="identifier"]');
+    if (identifier && identifier.dataset.userEditIdentifierResetBound !== "true") {
+      identifier.dataset.userEditIdentifierResetBound = "true";
+      identifier.addEventListener("input", function () {
+        delete form.dataset.airportUserEditedFields;
+        delete form.dataset.robustPrefilledAirportIdent;
+        delete form.dataset.statusFallbackPrefilledIdent;
+        delete form.dataset.prefilledAirportIdent;
+      }, true);
+    }
+  }
+
+  function boot() {
+    bindAirportAmendUserEditProtection();
+
+    let runs = 0;
+    const timer = setInterval(function () {
+      bindAirportAmendUserEditProtection();
+      runs += 1;
+      if (runs > 120) clearInterval(timer);
+    }, 250);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();
 
