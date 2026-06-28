@@ -11,6 +11,10 @@
   };
 
   const BUILT_IN_ADJACENT_RECORDS = {
+    IAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
+    KIAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
+    ICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
+    KICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
     MON: { center: "ZME", name: "MON NAVAID", fdcd: "901-368-8453/8449", record_type: "NAVAID", nearest_wx: "LLQ" },
     LLQ: { center: "ZME", name: "LLQ AIRPORT", fdcd: "901-368-8453/8449", record_type: "AIRPORT", nearest_wx: "LLQ" },
     KLLQ: { center: "ZME", name: "LLQ AIRPORT", fdcd: "901-368-8453/8449", record_type: "AIRPORT", nearest_wx: "LLQ" }
@@ -69,8 +73,12 @@
     const record = {
       center: centerCode,
       name: String(airportName || ident).trim().toUpperCase(),
-      fdcd: center.fdcd
+      fdcd: center.fdcd,
+      record_type: "NON_ZFW_AIRPORT",
+      data_category: "non_zfw_airports"
     };
+
+    removeLocalZfwAirportShadow(ident);
 
     store.airports[ident] = record;
     store.airports["K" + ident] = record;
@@ -102,7 +110,70 @@
     });
   }
 
+
+  function removeLocalZfwAirportShadow(identifier){
+    const aliases = aliasesFor(identifier);
+    const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+
+    aliases.forEach(function(alias){
+      const record = records[alias];
+      if(!record) return;
+
+      const recordType = String(record.record_type || record.type || "").toUpperCase();
+      const looksNonZfw = recordType === "NON_ZFW_AIRPORT" ||
+        record.data_category === "non_zfw_airports" ||
+        record.category === "non_zfw_airports";
+
+      // If a user accidentally saved a non-ZFW airport through the normal airport Add/Amend form,
+      // remove that local ZFW airport shadow so adjacent ARTCC lookup can win.
+      if(looksNonZfw || !record.sectors || !record.sectors.length){
+        delete records[alias];
+      }
+    });
+
+    ["zfwAirportLocatorCorrections", "zfwAirportCorrections"].forEach(function(key){
+      try{
+        const raw = localStorage.getItem(key);
+        if(!raw) return;
+
+        const all = JSON.parse(raw);
+        let changed = false;
+
+        aliases.forEach(function(alias){
+          const record = all && all[alias];
+          if(!record) return;
+
+          const recordType = String(record.record_type || record.type || "").toUpperCase();
+          const looksNonZfw = recordType === "NON_ZFW_AIRPORT" ||
+            record.data_category === "non_zfw_airports" ||
+            record.category === "non_zfw_airports";
+
+          if(looksNonZfw || !record.sectors || !record.sectors.length){
+            delete all[alias];
+            changed = true;
+          }
+        });
+
+        if(changed){
+          localStorage.setItem(key, JSON.stringify(all));
+        }
+      }catch(error){
+        console.warn("Could not remove non-ZFW airport shadow from " + key + ".", error);
+      }
+    });
+  }
+
+  function protectAdjacentRecordsFromZfwShadows(){
+    const store = ensureStore();
+    Object.keys(store.airports || {}).forEach(function(identifier){
+      removeLocalZfwAirportShadow(identifier);
+    });
+  }
+
+
   function getAdjacentRecord(identifier){
+    removeLocalZfwAirportShadow(identifier);
+
     if(localZfwAirportRecordExists(identifier)){
       return null;
     }
@@ -132,7 +203,9 @@
 
   function saveLocalRecord(ident, record){
     const all = loadLocalRecords();
-    all[ident] = record;
+    const clean = canonicalAirportIdent(ident);
+    all[clean] = record;
+    all["K" + clean] = record;
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
   }
 
@@ -382,11 +455,16 @@
         message.className = "correction-message error";
       }
 
+      protectAdjacentRecordsFromZfwShadows();
+
       const input = document.getElementById("airportInput");
       if(input){
         input.value = saved.ident;
         input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
       }
+
+      applyAdjacentAirportLookup(saved.ident);
 
       setTimeout(closeModal, 900);
     });
@@ -448,6 +526,7 @@
   function boot(){
     ensureStore();
     applyLocalRecords();
+    protectAdjacentRecordsFromZfwShadows();
     createModal();
     attachStaticButton();
 

@@ -2724,3 +2724,74 @@ const corrections = loadCorrections();
   }
 })();
 
+
+/* Non-ZFW airport shadow cleanup */
+(function () {
+  "use strict";
+
+  const NON_ZFW_FORCE_ADJACENT = {
+    IAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508" },
+    KIAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508" },
+    ICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508" },
+    KICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508" }
+  };
+
+  function ensureAdjacentStore() {
+    if (!window.ZFW_ADJACENT_ARTCC_AIRPORTS) {
+      window.ZFW_ADJACENT_ARTCC_AIRPORTS = { centers: {}, airports: {} };
+    }
+    window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports = window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports || {};
+    return window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports;
+  }
+
+  function removeAirportShadow() {
+    const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+    const adjacent = ensureAdjacentStore();
+
+    Object.keys(NON_ZFW_FORCE_ADJACENT).forEach(function (ident) {
+      const cleanRecord = Object.assign({
+        record_type: "NON_ZFW_AIRPORT",
+        data_category: "non_zfw_airports"
+      }, NON_ZFW_FORCE_ADJACENT[ident]);
+
+      adjacent[ident] = cleanRecord;
+
+      if (records[ident]) {
+        delete records[ident];
+      }
+    });
+
+    ["zfwAirportLocatorCorrections", "zfwAirportCorrections"].forEach(function (key) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return;
+
+        const all = JSON.parse(raw);
+        let changed = false;
+
+        Object.keys(NON_ZFW_FORCE_ADJACENT).forEach(function (ident) {
+          if (all && all[ident]) {
+            delete all[ident];
+            changed = true;
+          }
+        });
+
+        if (changed) localStorage.setItem(key, JSON.stringify(all));
+      } catch (error) {
+        console.warn("Could not clear stale ZFW airport correction for non-ZFW airport.", error);
+      }
+    });
+  }
+
+  window.ZFW_CLEAR_NON_ZFW_AIRPORT_SHADOWS = removeAirportShadow;
+
+  removeAirportShadow();
+
+  let runs = 0;
+  const timer = setInterval(function () {
+    removeAirportShadow();
+    runs += 1;
+    if (runs >= 60) clearInterval(timer);
+  }, 500);
+})();
+
