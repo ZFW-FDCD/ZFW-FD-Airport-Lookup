@@ -657,3 +657,151 @@
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire);
   else wire();
 })();
+
+
+/* Navaid / waypoint entry protection */
+(function () {
+  "use strict";
+
+  function normalizeIdent(value) {
+    return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  }
+
+  function isCompleteLookupIdent(value) {
+    const ident = normalizeIdent(value);
+    return /^[A-Z0-9]{3}$/.test(ident) ||
+      /^K[A-Z0-9]{3}$/.test(ident) ||
+      /^[A-Z0-9]{4}$/.test(ident) ||
+      /^[A-Z0-9]{5}$/.test(ident);
+  }
+
+  function airportRecords() {
+    return (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+  }
+
+  function navSources() {
+    return Object.assign(
+      {},
+      window.ZFW_NAV_DATA || {},
+      window.ZFW_SUPPLEMENTAL_NAVAIDS || {},
+      window.ZFW_SUPPLEMENTAL_WAYPOINTS || {}
+    );
+  }
+
+  function recordType(record) {
+    return String(record && (record.record_type || record.type) || "").toUpperCase();
+  }
+
+  function isAirportRecord(record) {
+    const type = recordType(record);
+    if (type === "AIRPORT") return true;
+    if (["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type)) return false;
+
+    return Boolean(
+      record &&
+      (
+        (Array.isArray(record.sectors) && record.sectors.length) ||
+        (Array.isArray(record.apps) && record.apps.length) ||
+        (Array.isArray(record.contacts) && record.contacts.length) ||
+        (Array.isArray(record.hours) && record.hours.length)
+      )
+    );
+  }
+
+  function isNavRecord(record) {
+    const type = recordType(record);
+    return ["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type);
+  }
+
+  function findNavOnlyRecord(identifier) {
+    let ident = normalizeIdent(identifier);
+    if (!isCompleteLookupIdent(ident)) return null;
+
+    if (ident.length === 4 && ident.startsWith("K")) {
+      ident = ident.slice(1);
+    }
+
+    const records = airportRecords();
+    const sources = navSources();
+    const kIdent = ident.length === 3 ? "K" + ident : "";
+
+    // Airport identifiers must continue to win when an airport and navaid share the same ID.
+    if (kIdent && isAirportRecord(records[kIdent])) return null;
+    if (isAirportRecord(records[ident])) return null;
+
+    if (sources[ident]) {
+      return { ident: ident, record: sources[ident] };
+    }
+
+    if (records[ident] && isNavRecord(records[ident])) {
+      return { ident: ident, record: records[ident] };
+    }
+
+    return null;
+  }
+
+  function handleNavEntry(event) {
+    const input = event && event.target;
+    if (!input || input.id !== "airportInput") return;
+
+    const ident = normalizeIdent(input.value);
+    const found = findNavOnlyRecord(ident);
+    if (!found) return;
+
+    // Stop the airport-only FDCS lookup from converting 3-letter navaids into K-airport
+    // searches and marking them "not found".
+    if (event.preventDefault) event.preventDefault();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+    else if (event.stopPropagation) event.stopPropagation();
+
+    input.value = found.ident;
+
+    if (window.ZFW_MERGE_NAV_DATA) {
+      try { window.ZFW_MERGE_NAV_DATA(); } catch (error) {}
+    }
+
+    if (window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT) {
+      window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT(found.ident);
+    }
+
+    setTimeout(function () {
+      if (window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT) {
+        window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT(found.ident);
+      }
+    }, 75);
+
+    setTimeout(function () {
+      if (window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT) {
+        window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT(found.ident);
+      }
+    }, 250);
+  }
+
+  function bindNavaidEntryProtection() {
+    const input = document.getElementById("airportInput");
+    if (!input || input.dataset.navaidEntryProtectionBound === "true") return;
+
+    input.dataset.navaidEntryProtectionBound = "true";
+    ["input", "change", "keyup"].forEach(function (eventName) {
+      input.addEventListener(eventName, handleNavEntry, true);
+    });
+  }
+
+  function boot() {
+    bindNavaidEntryProtection();
+
+    let runs = 0;
+    const timer = setInterval(function () {
+      bindNavaidEntryProtection();
+      runs += 1;
+      if (runs > 40) clearInterval(timer);
+    }, 250);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+
