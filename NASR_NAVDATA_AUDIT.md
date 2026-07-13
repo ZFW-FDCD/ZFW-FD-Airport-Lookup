@@ -1,9 +1,9 @@
 # ZFW NASR Navdata Audit
 
-Cycle page: https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-07-09
+Cycle page: https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-08-06
 Generated navpoint records: 10304
 Generated weather stations: 0
-Generated adjacent ARTCC airports: 5038
+Generated adjacent ARTCC airports: 5031
 Records missing nearest_wx: 10016
 
 ## Sample required checks
