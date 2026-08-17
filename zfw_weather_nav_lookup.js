@@ -412,6 +412,7 @@
           "active",
           "warning",
           "primary",
+          "fdcs-green-highlight",
           "omic-green-highlight",
           "omic-red-highlight"
         );
@@ -440,6 +441,7 @@
           "active",
           "warning",
           "primary",
+          "fdcs-green-highlight",
           "omic-green-highlight",
           "omic-red-highlight"
         );
@@ -803,5 +805,89 @@
   } else {
     boot();
   }
+})();
+
+
+/* Empty output boxes must not remain highlighted after navaid/waypoint lookup */
+(function () {
+  "use strict";
+
+  const EMPTY_OUTPUT_IDS = [
+    "sector",
+    "area",
+    "approach",
+    "vscs",
+    "contact",
+    "hours",
+    "appVscs",
+    "appContact",
+    "appHours"
+  ];
+
+  function isEmptyValue(value) {
+    const text = String(value || "")
+      .replace(/\u00a0/g, " ")
+      .trim();
+
+    return !text || text === "—" || text === "-";
+  }
+
+  function clearCardHighlightForValue(valueEl) {
+    if (!valueEl || !isEmptyValue(valueEl.textContent)) return;
+
+    valueEl.classList.remove(
+      "red-text",
+      "green-text",
+      "amber-text",
+      "cyan-text",
+      "omic-green-text",
+      "omic-red-text"
+    );
+    valueEl.style.color = "";
+
+    const card = valueEl.closest(".card");
+    if (!card) return;
+
+    card.classList.remove(
+      "nearest-wx-highlight",
+      "highlight",
+      "active",
+      "warning",
+      "primary",
+      "fdcs-green-highlight",
+      "omic-green-highlight",
+      "omic-red-highlight"
+    );
+
+    card.style.background = "";
+    card.style.borderColor = "";
+    card.style.boxShadow = "";
+
+    const title = card.querySelector(".card-title");
+    if (title) title.style.color = "";
+  }
+
+  function clearEmptyOutputHighlights() {
+    EMPTY_OUTPUT_IDS.forEach(function (id) {
+      clearCardHighlightForValue(document.getElementById(id));
+    });
+  }
+
+  window.ZFW_CLEAR_EMPTY_OUTPUT_HIGHLIGHTS = clearEmptyOutputHighlights;
+
+  document.addEventListener("input", function (event) {
+    if (event.target && event.target.id === "airportInput") {
+      [0, 50, 150, 350, 700, 1100].forEach(function (delay) {
+        setTimeout(clearEmptyOutputHighlights, delay);
+      });
+    }
+  }, true);
+
+  let runs = 0;
+  const timer = setInterval(function () {
+    clearEmptyOutputHighlights();
+    runs += 1;
+    if (runs > 120) clearInterval(timer);
+  }, 250);
 })();
 
