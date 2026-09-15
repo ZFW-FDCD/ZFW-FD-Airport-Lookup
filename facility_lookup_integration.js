@@ -37,6 +37,13 @@
       .replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  function facilityHours(facility) {
+    if (!facility) return [];
+    if (Array.isArray(facility.hours)) return facility.hours.filter(Boolean).map(String);
+    if (typeof facility.hours === "string" && facility.hours.trim()) return [facility.hours.trim()];
+    return [];
+  }
+
   function facilityLines(facility) {
     const lines = [];
     if (facility.facility_name) lines.push(["Facility", facility.facility_name]);
@@ -50,13 +57,6 @@
     if (facility.frequency) lines.push(["Frequency", facility.frequency]);
     if (facility.notes) lines.push(["Notes", facility.notes]);
     return lines;
-  }
-
-  function facilityHours(facility) {
-    if (!facility) return [];
-    if (Array.isArray(facility.hours)) return facility.hours.filter(Boolean).map(String);
-    if (typeof facility.hours === "string" && facility.hours.trim()) return [facility.hours.trim()];
-    return [];
   }
 
   function parseClock(value) {
@@ -74,7 +74,11 @@
     return hour * 60 + minute;
   }
 
-  function facilityIsOpen(facility) {
+  function facilityIsOpen(facility, ident) {
+    const base = baseAirportIdent(ident);
+    // FTW (Meacham) and AFW (Alliance) are explicitly 24 x 7.
+    if (base === "FTW" || base === "AFW") return true;
+
     const hours = facilityHours(facility);
     if (!hours.length) return false;
     const now = new Date();
@@ -115,7 +119,7 @@
     const approach = document.getElementById("approach");
     if (!card) return;
     resetFacilityStatus(card);
-    const open = facilityIsOpen(facility);
+    const open = facilityIsOpen(facility, ident);
     if (open) {
       card.classList.add("facility-open");
       card.style.setProperty("border-color", "var(--green)", "important");
