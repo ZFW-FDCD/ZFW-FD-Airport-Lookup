@@ -32,9 +32,6 @@
     const records = window.AIRPORT_DATA && window.AIRPORT_DATA.records;
     if (!records) return;
 
-    // First, remove nav-only records from the legacy airport map when the same
-    // identifier is a known adjacent airport. This lets the normal app lookup
-    // fall through to the adjacent ARTCC handler instead of displaying the nav.
     const adjacent = window.ZFW_ADJACENT_ARTCC_AIRPORTS &&
       window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports;
 
@@ -48,11 +45,16 @@
             delete records[alias];
           }
         });
+
+        // HOT is both an airport and a navaid identifier, but the airport's
+        // own ASOS is the nearest weather source. Preserve that explicitly.
+        if (ident === "HOT" && adjacent[key] &&
+            String(adjacent[key].record_type || "").toUpperCase() === "AIRPORT") {
+          adjacent[key].nearest_wx = "HOT";
+        }
       });
     }
 
-    // Keep the normal three-letter airport lookup working when an airport
-    // record exists under only one of its two conventional identifiers.
     Object.keys(records).forEach(function (key) {
       const ident = normalizeIdent(key);
       if (!/^[A-Z0-9]{3}$/.test(ident)) return;
@@ -77,11 +79,6 @@
     });
   }
 
-  // The main lookup normally listens for input events, but the live page has
-  // shown that the automatic trigger can fail while the Enter-key path still
-  // works. Use the proven Enter path as a compatibility trigger whenever a
-  // complete airport identifier is typed. This does not alter lookup logic;
-  // it simply guarantees that typing and pressing Enter use the same handler.
   function installAutomaticLookupFallback() {
     const input = document.getElementById("airportInput");
     if (!input || input.dataset.zfwAutoLookupFallback === "1") return;
@@ -90,12 +87,7 @@
     input.addEventListener("input", function () {
       const typed = normalizeIdent(input.value);
       if (!/^[A-Z0-9]{3,5}$/.test(typed)) return;
-      if (!(
-        typed.length === 3 ||
-        /^K[A-Z0-9]{3}$/.test(typed) ||
-        typed.length === 4 ||
-        typed.length === 5
-      )) return;
+      if (!(typed.length === 3 || /^K[A-Z0-9]{3}$/.test(typed) || typed.length === 4 || typed.length === 5)) return;
 
       setTimeout(function () {
         if (normalizeIdent(input.value) !== typed) return;
