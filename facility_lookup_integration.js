@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const SPECIAL_FACILITIES = ["ADS", "AFW", "FTW"];
+
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
   }
@@ -18,10 +20,8 @@
     const ident = normalizeIdent(value);
     const base = baseAirportIdent(ident);
     const records = facilityRecords();
-
     if (records[ident] && records[ident].active !== false) return records[ident];
     if (records[base] && records[base].active !== false) return records[base];
-
     return Object.keys(records).map(function (key) { return records[key]; }).find(function (record) {
       if (!record || record.active === false) return false;
       return (Array.isArray(record.airports) ? record.airports : []).some(function (airport) {
@@ -44,11 +44,94 @@
     if (facility.controlling_facility) lines.push(["Controlling", facility.controlling_facility]);
     if (facility.clearance_contact) lines.push(["Clearance", facility.clearance_contact]);
     if (facility.phone) lines.push(["Phone", facility.phone]);
-    if (Array.isArray(facility.hours) && facility.hours.length) lines.push(["Hours", facility.hours.join(" / ")]);
+    if (Array.isArray(facility.hours) && facility.hours.length) lines.push(["Facility Hours", facility.hours.join(" / ")]);
     if (facility.vscs) lines.push(["VSCS / ID", facility.vscs]);
     if (facility.frequency) lines.push(["Frequency", facility.frequency]);
     if (facility.notes) lines.push(["Notes", facility.notes]);
     return lines;
+  }
+
+  function parseClock(value) {
+    const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let hour = Number(match[1]);
+    const minute = Number(match[2] || 0);
+    const meridiem = String(match[3] || "").toUpperCase();
+    if (hour > 23 || minute > 59) return null;
+    if (meridiem) {
+      if (hour < 1 || hour > 12) return null;
+      if (meridiem === "AM" && hour === 12) hour = 0;
+      if (meridiem === "PM" && hour !== 12) hour += 12;
+    }
+    return hour * 60 + minute;
+  }
+
+  function facilityIsOpen(facility) {
+    const hours = Array.isArray(facility.hours) ? facility.hours : [];
+    if (!hours.length) return false;
+    const now = new Date();
+    const current = now.getHours() * 60 + now.getMinutes();
+
+    return hours.some(function (entry) {
+      const text = String(entry || "").trim().toUpperCase();
+      if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
+
+      const closed = text.match(/CLOSED\s+(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
+      if (closed) {
+        const start = parseClock(closed[1]);
+        const end = parseClock(closed[2]);
+        if (start === null || end === null) return true;
+        const isClosed = start === end ? true : (start < end ? current >= start && current < end : current >= start || current < end);
+        return !isClosed;
+      }
+
+      const open = text.match(/(?:OPEN\s+)?(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
+      if (open) {
+        const start = parseClock(open[1]);
+        const end = parseClock(open[2]);
+        if (start !== null && end !== null) return start <= end ? current >= start && current < end : current >= start || current < end;
+      }
+      return false;
+    });
+  }
+
+  function resetFacilityStatus(card) {
+    if (!card) return;
+    card.style.borderColor = "";
+    card.style.boxShadow = "";
+    card.classList.remove("facility-open", "facility-closed");
+  }
+
+  function applyClearanceStatus(value, facility) {
+    const ident = baseAirportIdent(value);
+    if (SPECIAL_FACILITIES.indexOf(ident) === -1 || !facility) return;
+
+    const card = document.getElementById("facilityContactCard");
+    const approachCard = document.getElementById("approachCard");
+    const approach = document.getElementById("approach");
+    if (!card) return;
+
+    resetFacilityStatus(card);
+
+    const open = facilityIsOpen(facility);
+    if (open) {
+      card.classList.add("facility-open");
+      card.style.borderColor = "var(--green)";
+      card.style.boxShadow = "0 0 0 3px rgba(80,220,120,.25), 0 0 18px rgba(80,220,120,.18)";
+    } else {
+      card.classList.add("facility-closed");
+      card.style.borderColor = "var(--red)";
+      card.style.boxShadow = "0 0 0 3px rgba(255,75,75,.28), 0 0 18px rgba(255,75,75,.24)";
+
+      // When the facility is closed, D10/Approach is the active clearance contact.
+      if (approachCard && approach) {
+        approachCard.style.borderColor = "var(--green)";
+        approachCard.style.boxShadow = "";
+        approachCard.classList.add("fdcs-green-highlight");
+        approach.classList.remove("red-text");
+        approach.classList.add("green-text");
+      }
+    }
   }
 
   function makeFacilityCard() {
@@ -75,6 +158,7 @@
       .facility-contact-label { font-weight:900; }
       .omic-facility-contact-card { display:none; margin-top:12px; border-color:var(--cyan) !important; }
       .omic-facility-contact-card .card-title,.omic-facility-contact-card .card-value { color:var(--cyan) !important; }
+      .facility-open,.facility-closed { transition:box-shadow .15s ease,border-color .15s ease; }
     `;
     document.head.appendChild(style);
   }
@@ -86,12 +170,13 @@
     const output = document.getElementById("facilityContact");
     if (!card || !output) return;
     const facility = getFacilityForAirport(value);
-    if (!facility) { card.style.display = "none"; output.textContent = "—"; return; }
+    if (!facility) { card.style.display = "none"; output.textContent = "—"; resetFacilityStatus(card); return; }
     const lines = facilityLines(facility);
     output.innerHTML = lines.length ? lines.map(function (line) {
       return '<div class="facility-contact-line"><span class="facility-contact-label">' + escapeHtml(line[0]) + ':</span> ' + escapeHtml(line[1]) + '</div>';
     }).join("") : "Facility record found";
     card.style.display = "block";
+    applyClearanceStatus(value, facility);
   }
 
   function renderOmicFacility(value) {
@@ -99,7 +184,6 @@
     const page = document.getElementById("omicPage");
     const grid = page && page.querySelector(".omic-output-grid");
     if (!grid) return;
-
     let card = document.getElementById("omicFacilityContactCard");
     if (!card) {
       card = document.createElement("div");
@@ -108,11 +192,9 @@
       card.innerHTML = '<div class="card-title">FACILITY / CLEARANCE CONTACT</div><div id="omicFacilityContact" class="card-value">—</div>';
       grid.appendChild(card);
     }
-
     const output = document.getElementById("omicFacilityContact");
     const facility = getFacilityForAirport(value);
     if (!facility) { card.style.display = "none"; output.textContent = "—"; return; }
-
     output.innerHTML = facilityLines(facility).map(function (line) {
       return '<div class="facility-contact-line"><span class="facility-contact-label">' + escapeHtml(line[0]) + ':</span> ' + escapeHtml(line[1]) + '</div>';
     }).join("") || "Facility record found";
@@ -124,16 +206,14 @@
     makeFacilityStyles();
     const input = document.getElementById("airportInput");
     if (input) {
-      input.addEventListener("input", function () { renderFacility(input.value); }, true);
-      input.addEventListener("change", function () { renderFacility(input.value); }, true);
+      input.addEventListener("input", function () { renderFacility(input.value); setTimeout(function () { renderFacility(input.value); }, 0); }, true);
+      input.addEventListener("change", function () { renderFacility(input.value); setTimeout(function () { renderFacility(input.value); }, 0); }, true);
     }
-
     const omicInput = document.getElementById("omicInput");
     if (omicInput) {
       omicInput.addEventListener("input", function () { renderOmicFacility(omicInput.value); }, true);
       omicInput.addEventListener("change", function () { renderOmicFacility(omicInput.value); }, true);
     }
-
     window.addEventListener("zfw-facilities-updated", function () {
       renderFacility(input ? input.value : "");
       renderOmicFacility(omicInput ? omicInput.value : "");
