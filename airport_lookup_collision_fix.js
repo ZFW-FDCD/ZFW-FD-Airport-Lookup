@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  // Airport and navaid identifiers are separate entities.  The legacy app uses
+  // Airport and navaid identifiers are separate entities. The legacy app uses
   // AIRPORT_DATA.records for its primary airport lookup, while the nav/weather
-  // layer also works with ZFW_NAV_DATA.  A nav-only record must therefore never
+  // layer also works with ZFW_NAV_DATA. A nav-only record must therefore never
   // block an adjacent-airport lookup such as HOT.
 
   function normalizeIdent(value) {
@@ -77,10 +77,46 @@
     });
   }
 
+  // The main lookup normally listens for input events, but the live page has
+  // shown that the automatic trigger can fail while the Enter-key path still
+  // works. Use the proven Enter path as a compatibility trigger whenever a
+  // complete airport identifier is typed. This does not alter lookup logic;
+  // it simply guarantees that typing and pressing Enter use the same handler.
+  function installAutomaticLookupFallback() {
+    const input = document.getElementById("airportInput");
+    if (!input || input.dataset.zfwAutoLookupFallback === "1") return;
+    input.dataset.zfwAutoLookupFallback = "1";
+
+    input.addEventListener("input", function () {
+      const typed = normalizeIdent(input.value);
+      if (!/^[A-Z0-9]{3,5}$/.test(typed)) return;
+      if (!(
+        typed.length === 3 ||
+        /^K[A-Z0-9]{3}$/.test(typed) ||
+        typed.length === 4 ||
+        typed.length === 5
+      )) return;
+
+      setTimeout(function () {
+        if (normalizeIdent(input.value) !== typed) return;
+        input.dispatchEvent(new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          bubbles: true,
+          cancelable: true
+        }));
+      }, 0);
+    });
+  }
+
   repairAirportAliases();
+  installAutomaticLookupFallback();
   window.addEventListener("zfw-shared-corrections-updated", repairAirportAliases);
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
   setTimeout(repairAirportAliases, 0);
   setTimeout(repairAirportAliases, 250);
   setTimeout(repairAirportAliases, 1000);
+  setTimeout(installAutomaticLookupFallback, 0);
+  setTimeout(installAutomaticLookupFallback, 250);
+  setTimeout(installAutomaticLookupFallback, 1000);
 })();
