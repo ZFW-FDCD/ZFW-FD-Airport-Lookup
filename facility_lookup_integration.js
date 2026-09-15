@@ -44,11 +44,19 @@
     if (facility.controlling_facility) lines.push(["Controlling", facility.controlling_facility]);
     if (facility.clearance_contact) lines.push(["Clearance", facility.clearance_contact]);
     if (facility.phone) lines.push(["Phone", facility.phone]);
-    if (Array.isArray(facility.hours) && facility.hours.length) lines.push(["Facility Hours", facility.hours.join(" / ")]);
+    const hours = facilityHours(facility);
+    if (hours.length) lines.push(["Facility Hours", hours.join(" / ")]);
     if (facility.vscs) lines.push(["VSCS / ID", facility.vscs]);
     if (facility.frequency) lines.push(["Frequency", facility.frequency]);
     if (facility.notes) lines.push(["Notes", facility.notes]);
     return lines;
+  }
+
+  function facilityHours(facility) {
+    if (!facility) return [];
+    if (Array.isArray(facility.hours)) return facility.hours.filter(Boolean).map(String);
+    if (typeof facility.hours === "string" && facility.hours.trim()) return [facility.hours.trim()];
+    return [];
   }
 
   function parseClock(value) {
@@ -67,7 +75,7 @@
   }
 
   function facilityIsOpen(facility) {
-    const hours = Array.isArray(facility.hours) ? facility.hours : [];
+    const hours = facilityHours(facility);
     if (!hours.length) return false;
     const now = new Date();
     const current = now.getHours() * 60 + now.getMinutes();
@@ -78,7 +86,7 @@
       if (closed) {
         const start = parseClock(closed[1]);
         const end = parseClock(closed[2]);
-        if (start === null || end === null) return true;
+        if (start === null || end === null) return false;
         const isClosed = start === end ? true : (start < end ? current >= start && current < end : current >= start || current < end);
         return !isClosed;
       }
@@ -117,8 +125,8 @@
       card.style.setProperty("border-color", "var(--red)", "important");
       card.style.setProperty("box-shadow", "0 0 0 3px rgba(255,75,75,.28),0 0 18px rgba(255,75,75,.24)", "important");
       if (approachCard && approach) {
-        approachCard.style.borderColor = "var(--green)";
-        approachCard.style.boxShadow = "";
+        approachCard.style.setProperty("border-color", "var(--green)", "important");
+        approachCard.style.setProperty("box-shadow", "", "important");
         approachCard.classList.add("fdcs-green-highlight");
         approach.classList.remove("red-text");
         approach.classList.add("green-text");
