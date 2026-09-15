@@ -24,7 +24,7 @@
   function timeoutPromise(ms) { return new Promise(function (_, reject) { setTimeout(function () { reject(new Error("Firebase connection timed out.")); }, ms); }); }
   function isAirportType(type) { return String(type || "").toLowerCase() === "airport"; }
   function isNonZfwType(type) { const value = String(type || "").toLowerCase(); return value === "non_zfw_airports" || value === "non_zfw_airport" || value === "non-zfw-airports" || value === "non_zfw" || value === "non-zfw"; }
-  function isFacilityType(type) { return String(type || "").toLowerCase() === "facility_contacts" || String(type || "").toLowerCase() === "facility"; }
+  function isFacilityType(type) { const value = String(type || "").toLowerCase(); return value === "facility_contacts" || value === "facility"; }
   function recordIsNonZfw(record) { if (!record) return false; return isNonZfwType(record.data_category) || isNonZfwType(record.category) || String(record.record_type || "").toUpperCase() === "NON_ZFW_AIRPORT"; }
 
   function applyRecord(type, ident, record) {
@@ -56,13 +56,19 @@
     } catch (error) { initFailed = true; console.warn("ZFW Firebase disabled:", error.message || error); return false; }
   }
 
-  async function loadFacilityScript() {
-    try { await import("./facility_corrections.js?v=" + Date.now()); return true; }
-    catch (error) { console.warn("Could not load facility manager:", error.message || error); return false; }
+  async function loadFacilityScripts() {
+    try {
+      await import("./facility_corrections.js?v=" + Date.now());
+      await import("./facility_lookup_integration.js?v=" + Date.now());
+      return true;
+    } catch (error) {
+      console.warn("Could not load facility manager/integration:", error.message || error);
+      return false;
+    }
   }
 
   async function loadSharedCorrections() {
-    await loadFacilityScript();
+    await loadFacilityScripts();
     const ok = await initFirebase(); if (!ok) return false;
     try {
       const collection = firestoreApi.collection, getDocs = firestoreApi.getDocs;
@@ -72,7 +78,14 @@
         { type: "non_zfw_airports", path: "non_zfw_airports" },
         { type: "facility_contacts", path: "facility_contacts" }
       ];
-      for (const group of groups) { const snapshot = await getDocs(collection(db, "zfw_corrections", group.path, "records")); snapshot.forEach(function (docSnap) { applyRecord(group.type, docSnap.id, docSnap.data()); }); }
+      for (const group of groups) {
+        try {
+          const snapshot = await getDocs(collection(db, "zfw_corrections", group.path, "records"));
+          snapshot.forEach(function (docSnap) { applyRecord(group.type, docSnap.id, docSnap.data()); });
+        } catch (groupError) {
+          console.warn("Could not load Firestore correction group " + group.path + ":", groupError.message || groupError);
+        }
+      }
       return true;
     } catch (error) { console.warn("Could not load Firestore corrections:", error.message || error); return false; }
   }
@@ -88,7 +101,7 @@
           { type: "non_zfw_airports", path: "non_zfw_airports" },
           { type: "facility_contacts", path: "facility_contacts" }
         ].forEach(function (group) {
-          onSnapshot(collection(db, "zfw_corrections", group.path, "records"), function (snapshot) { snapshot.docChanges().forEach(function (change) { if (change.type !== "removed") applyRecord(group.type, change.doc.id, change.doc.data()); }); }, function (error) { console.warn("Firestore listener stopped:", error.message || error); });
+          onSnapshot(collection(db, "zfw_corrections", group.path, "records"), function (snapshot) { snapshot.docChanges().forEach(function (change) { if (change.type !== "removed") applyRecord(group.type, change.doc.id, change.doc.data()); }); }, function (error) { console.warn("Firestore listener stopped for " + group.path + ":", error.message || error); });
         });
       } catch (error) { console.warn("Could not start Firestore listeners:", error.message || error); }
     });
