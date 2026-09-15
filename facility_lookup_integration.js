@@ -86,6 +86,14 @@
     return hour * 60 + minute;
   }
 
+  function currentCentralZone(date) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: FACILITY_TIME_ZONE,
+      timeZoneName: "short"
+    }).formatToParts(date);
+    return String((parts.find(function (p) { return p.type === "timeZoneName"; }) || {}).value || "").toUpperCase();
+  }
+
   function localDateParts(date) {
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: FACILITY_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit"
@@ -127,6 +135,19 @@
     return { start: start, end: end };
   }
 
+  function parseSeasonalRanges(text, zone) {
+    const normalized = String(text || "").trim().toUpperCase();
+    if (!/(CST|CDT)\b/.test(normalized)) return [normalized];
+    const pieces = normalized.split("/").map(function (piece) { return piece.trim(); }).filter(Boolean);
+    const selected = [];
+    pieces.forEach(function (piece) {
+      const zoneMatch = piece.match(/\b(CST|CDT)\b/);
+      if (zoneMatch && zoneMatch[1] !== zone) return;
+      selected.push(piece.replace(/\s*\(?\b(?:CST|CDT)\b\)?\s*/g, " ").trim());
+    });
+    return selected;
+  }
+
   function facilityIsOpen(facility, ident) {
     const base = baseAirportIdent(ident);
     if (base === "FTW" || base === "AFW") return true;
@@ -143,23 +164,28 @@
     if (!hours.length) return null;
     const now = Date.now();
     const localToday = localDateParts(new Date(now));
+    const zone = currentCentralZone(new Date(now));
     let foundSchedule = false;
 
     for (let i = 0; i < hours.length; i++) {
-      const text = String(hours[i] || "").trim().toUpperCase();
-      if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
-      const isClosedSchedule = /^CLOSED\b/i.test(text);
-      const range = parseTimeRange(text.replace(/^CLOSED\s+/i, ""));
-      if (!range) continue;
-      foundSchedule = true;
-      const startUtc = localWallClockToUtc(localToday, range.start);
-      const endDate = range.end <= range.start ? shiftDate(localToday, 1) : localToday;
-      const endUtc = localWallClockToUtc(endDate, range.end);
-      const inRange = now >= startUtc && now <= endUtc;
-      if (isClosedSchedule) {
-        if (inRange) return false;
-      } else if (inRange) {
-        return true;
+      const sourceText = String(hours[i] || "").trim().toUpperCase();
+      const schedules = parseSeasonalRanges(sourceText, zone);
+      for (let j = 0; j < schedules.length; j++) {
+        const text = schedules[j];
+        if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
+        const isClosedSchedule = /^CLOSED\b/i.test(text);
+        const range = parseTimeRange(text.replace(/^CLOSED\s+/i, ""));
+        if (!range) continue;
+        foundSchedule = true;
+        const startUtc = localWallClockToUtc(localToday, range.start);
+        const endDate = range.end <= range.start ? shiftDate(localToday, 1) : localToday;
+        const endUtc = localWallClockToUtc(endDate, range.end);
+        const inRange = now >= startUtc && now <= endUtc;
+        if (isClosedSchedule) {
+          if (inRange) return false;
+        } else if (inRange) {
+          return true;
+        }
       }
     }
     return foundSchedule ? false : null;
@@ -179,10 +205,8 @@
     const approach = document.getElementById("approach");
     if (!card) return;
     resetFacilityStatus(card);
-
     const open = facilityIsOpen(facility, ident);
     if (open === null) return;
-
     if (open) {
       card.classList.add("facility-open");
       card.style.setProperty("border-color", "var(--green)", "important");
