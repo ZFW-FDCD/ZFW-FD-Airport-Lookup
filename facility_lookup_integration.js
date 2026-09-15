@@ -75,11 +75,27 @@
     return hour * 60 + minute;
   }
 
-  // The application's clock remains Zulu/UTC. Facility schedules are entered
-  // in the facility's local time, so convert each local schedule boundary to
-  // an actual UTC timestamp before comparing it with Date.now(). This also
-  // lets Central Time daylight-saving changes be handled automatically.
-  function localParts(date) {
+  function localDateParts(date) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: FACILITY_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(date);
+    return {
+      year: Number((parts.find(function (p) { return p.type === "year"; }) || {}).value),
+      month: Number((parts.find(function (p) { return p.type === "month"; }) || {}).value),
+      day: Number((parts.find(function (p) { return p.type === "day"; }) || {}).value)
+    };
+  }
+
+  // Convert a Central local wall-clock time to a real UTC timestamp.
+  // This intentionally keeps the app's clock in Zulu and only uses Central
+  // time to interpret the facility schedule. The Intl time-zone rules handle DST.
+  function localWallClockToUtc(dateParts, minutes) {
+    const localAsUtc = Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day,
+      Math.floor(minutes / 60), minutes % 60, 0, 0);
+    const probe = new Date(localAsUtc);
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: FACILITY_TIME_ZONE,
       year: "numeric",
@@ -87,34 +103,19 @@
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hourCycle: "h23"
-    }).formatToParts(date);
-    function part(type) {
+    }).formatToParts(probe);
+    const get = function (type) {
       return Number((parts.find(function (p) { return p.type === type; }) || {}).value || 0);
-    }
-    return { year: part("year"), month: part("month"), day: part("day"), hour: part("hour"), minute: part("minute") };
+    };
+    const representedLocal = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+    const offsetMs = representedLocal - localAsUtc;
+    return localAsUtc - offsetMs;
   }
 
-  function timeZoneOffsetMinutes(date) {
-    const p = localParts(date);
-    const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute);
-    return Math.round((asUtc - date.getTime()) / 60000);
-  }
-
-  function localWallTimeToUtc(year, month, day, minutes) {
-    const hour = Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    const wallUtc = Date.UTC(year, month - 1, day, hour, minute);
-    let result = new Date(wallUtc);
-    // Recalculate once using the offset at the candidate instant. This handles
-    // normal Central Standard/Daylight Time changes without assuming a fixed offset.
-    const offset = timeZoneOffsetMinutes(result);
-    result = new Date(wallUtc - offset * 60000);
-    return result;
-  }
-
-  function addLocalDays(year, month, day, days) {
-    const d = new Date(Date.UTC(year, month - 1, day + days));
+  function shiftDate(dateParts, days) {
+    const d = new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day + days));
     return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
   }
 
@@ -125,10 +126,8 @@
 
     const hours = facilityHours(facility);
     if (!hours.length) return false;
-
-    const now = new Date();
-    const local = localParts(now);
-    const currentUtc = now.getTime();
+    const now = Date.now();
+    const localToday = localDateParts(new Date(now));
 
     return hours.some(function (entry) {
       const text = String(entry || "").trim().toUpperCase();
@@ -140,14 +139,12 @@
         const end = parseClock(closed[2]);
         if (start === null || end === null) return false;
 
-        // The schedule is local time. Convert its boundaries to Zulu first.
-        const startUtc = localWallTimeToUtc(local.year, local.month, local.day, start);
-        const endDay = end > start ? addLocalDays(local.year, local.month, local.day, 0) : addLocalDays(local.year, local.month, local.day, 1);
-        const endUtc = localWallTimeToUtc(endDay.year, endDay.month, endDay.day, end);
-
-        // 2200 local through 0600 local is the overnight closed period.
-        // Keep 2200 and 0600 themselves open; closure begins at 2201 and ends at 0559.
-        const isClosed = start === end ? true : (currentUtc > startUtc.getTime() && currentUtc < endUtc.getTime());
+        // 2200 local remains open; closure begins at 2201 local.
+        // For an overnight closure, the end is on the following local date.
+        const startUtc = localWallClockToUtc(localToday, start);
+        const endDate = start === end || end <= start ? shiftDate(localToday, 1) : localToday;
+        const endUtc = localWallClockToUtc(endDate, end);
+        const isClosed = start === end ? true : (now > startUtc && now < endUtc);
         return !isClosed;
       }
 
@@ -156,12 +153,11 @@
         const start = parseClock(open[1]);
         const end = parseClock(open[2]);
         if (start === null || end === null) return false;
-        const startUtc = localWallTimeToUtc(local.year, local.month, local.day, start);
-        const endDay = end >= start ? addLocalDays(local.year, local.month, local.day, 0) : addLocalDays(local.year, local.month, local.day, 1);
-        const endUtc = localWallTimeToUtc(endDay.year, endDay.month, endDay.day, end);
-        return currentUtc >= startUtc.getTime() && currentUtc <= endUtc.getTime();
+        const startUtc = localWallClockToUtc(localToday, start);
+        const endDate = end < start ? shiftDate(localToday, 1) : localToday;
+        const endUtc = localWallClockToUtc(endDate, end);
+        return now >= startUtc && now <= endUtc;
       }
-
       return false;
     });
   }
