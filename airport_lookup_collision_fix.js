@@ -1,9 +1,11 @@
 (function () {
   "use strict";
 
-  // Keep the traditional 3-letter airport lookup (e.g. HOT) working even
-  // when the airport record exists only under its K-prefixed alias or only
-  // under the bare identifier. Navaids remain separate in ZFW_NAV_DATA.
+  // Airport and navaid identifiers are separate entities.  The legacy app uses
+  // AIRPORT_DATA.records for its primary airport lookup, while the nav/weather
+  // layer also works with ZFW_NAV_DATA.  A nav-only record must therefore never
+  // block an adjacent-airport lookup such as HOT.
+
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
   }
@@ -14,10 +16,43 @@
     return type === "AIRPORT";
   }
 
+  function isNavRecord(record) {
+    if (!record) return false;
+    const type = String(record.record_type || record.type || "").toUpperCase();
+    return ["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type);
+  }
+
+  function aliasesFor(value) {
+    const ident = normalizeIdent(value);
+    if (!/^[A-Z0-9]{3}$/.test(ident)) return [];
+    return [ident, "K" + ident];
+  }
+
   function repairAirportAliases() {
     const records = window.AIRPORT_DATA && window.AIRPORT_DATA.records;
     if (!records) return;
 
+    // First, remove nav-only records from the legacy airport map when the same
+    // identifier is a known adjacent airport. This lets the normal app lookup
+    // fall through to the adjacent ARTCC handler instead of displaying the nav.
+    const adjacent = window.ZFW_ADJACENT_ARTCC_AIRPORTS &&
+      window.ZFW_ADJACENT_ARTCC_AIRPORTS.airports;
+
+    if (adjacent) {
+      Object.keys(adjacent).forEach(function (key) {
+        const ident = normalizeIdent(key);
+        if (!/^[A-Z0-9]{3}$/.test(ident)) return;
+
+        aliasesFor(ident).forEach(function (alias) {
+          if (isNavRecord(records[alias]) && !isAirportRecord(records[alias])) {
+            delete records[alias];
+          }
+        });
+      });
+    }
+
+    // Keep the normal three-letter airport lookup working when an airport
+    // record exists under only one of its two conventional identifiers.
     Object.keys(records).forEach(function (key) {
       const ident = normalizeIdent(key);
       if (!/^[A-Z0-9]{3}$/.test(ident)) return;
@@ -34,6 +69,7 @@
       const ident = normalizeIdent(key);
       if (!/^K[A-Z0-9]{3}$/.test(ident)) return;
       if (!isAirportRecord(records[key])) return;
+
       const base = ident.slice(1);
       if (!isAirportRecord(records[base])) {
         records[base] = JSON.parse(JSON.stringify(records[key]));
@@ -46,4 +82,5 @@
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
   setTimeout(repairAirportAliases, 0);
   setTimeout(repairAirportAliases, 250);
+  setTimeout(repairAirportAliases, 1000);
 })();
