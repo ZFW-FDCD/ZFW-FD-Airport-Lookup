@@ -3,6 +3,8 @@
 
   const SPECIAL_FACILITIES = ["ADS", "AFW", "FTW"];
   const FACILITY_TIME_ZONE = "America/Chicago";
+  const ADS_OPEN_START_LOCAL = 6 * 60;
+  const ADS_OPEN_END_LOCAL = 22 * 60;
 
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
@@ -89,13 +91,9 @@
     };
   }
 
-  // Convert a Central local wall-clock time to a real UTC timestamp.
-  // This intentionally keeps the app's clock in Zulu and only uses Central
-  // time to interpret the facility schedule. The Intl time-zone rules handle DST.
   function localWallClockToUtc(dateParts, minutes) {
     const localAsUtc = Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day,
       Math.floor(minutes / 60), minutes % 60, 0, 0);
-    const probe = new Date(localAsUtc);
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: FACILITY_TIME_ZONE,
       year: "numeric",
@@ -105,7 +103,7 @@
       minute: "2-digit",
       second: "2-digit",
       hourCycle: "h23"
-    }).formatToParts(probe);
+    }).formatToParts(new Date(localAsUtc));
     const get = function (type) {
       return Number((parts.find(function (p) { return p.type === type; }) || {}).value || 0);
     };
@@ -121,8 +119,20 @@
 
   function facilityIsOpen(facility, ident) {
     const base = baseAirportIdent(ident);
+
     // FTW (Meacham) and AFW (Alliance) are explicitly 24 x 7.
     if (base === "FTW" || base === "AFW") return true;
+
+    // Addison's operational schedule is 0600-2200 Central local time.
+    // The application clock remains Zulu. We convert the local schedule
+    // boundaries into UTC instants and compare the real UTC clock to them.
+    if (base === "ADS") {
+      const now = Date.now();
+      const today = localDateParts(new Date(now));
+      const openUtc = localWallClockToUtc(today, ADS_OPEN_START_LOCAL);
+      const closeUtc = localWallClockToUtc(today, ADS_OPEN_END_LOCAL);
+      return now >= openUtc && now <= closeUtc;
+    }
 
     const hours = facilityHours(facility);
     if (!hours.length) return false;
@@ -138,9 +148,6 @@
         const start = parseClock(closed[1]);
         const end = parseClock(closed[2]);
         if (start === null || end === null) return false;
-
-        // 2200 local remains open; closure begins at 2201 local.
-        // For an overnight closure, the end is on the following local date.
         const startUtc = localWallClockToUtc(localToday, start);
         const endDate = start === end || end <= start ? shiftDate(localToday, 1) : localToday;
         const endUtc = localWallClockToUtc(endDate, end);
@@ -182,6 +189,7 @@
       card.classList.add("facility-open");
       card.style.setProperty("border-color", "var(--green)", "important");
       card.style.setProperty("box-shadow", "0 0 0 3px rgba(80,220,120,.25),0 0 18px rgba(80,220,120,.18)", "important");
+      if (approachCard) approachCard.classList.remove("fdcs-green-highlight");
     } else {
       card.classList.add("facility-closed");
       card.style.setProperty("border-color", "var(--red)", "important");
@@ -284,6 +292,12 @@
       renderFacility(input ? input.value : "");
       renderOmicFacility(omicInput ? omicInput.value : "");
     }, 0);
+
+    // Re-evaluate the facility state so the highlight changes automatically
+    // when the local facility crosses 0600 or 2200 without a new lookup.
+    setInterval(function () {
+      if (input && input.value) renderFacility(input.value);
+    }, 30000);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
