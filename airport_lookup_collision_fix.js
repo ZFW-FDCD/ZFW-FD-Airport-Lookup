@@ -1,10 +1,9 @@
 (function () {
   "use strict";
 
-  // Airport and navaid identifiers are separate entities. The legacy app uses
-  // AIRPORT_DATA.records for its primary airport lookup, while the nav/weather
-  // layer also works with ZFW_NAV_DATA. A nav-only record must therefore never
-  // block an adjacent-airport lookup such as HOT.
+  // Airport and navaid identifiers are separate entities. A shared identifier
+  // such as HOT must resolve to the airport when entered in the Airport box,
+  // while the navaid remains available to the PIREP/nav lookup layer.
 
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -46,8 +45,8 @@
           }
         });
 
-        // HOT is both an airport and a navaid identifier, but the airport's
-        // own ASOS is the nearest weather source. Preserve that explicitly.
+        // HOT is both a navaid and an airport. The airport's nearest weather
+        // station is HOT itself and must remain explicit.
         if (ident === "HOT" && adjacent[key] &&
             String(adjacent[key].record_type || "").toUpperCase() === "AIRPORT") {
           adjacent[key].nearest_wx = "HOT";
@@ -79,32 +78,62 @@
     });
   }
 
-  function installAutomaticLookupFallback() {
-    const input = document.getElementById("airportInput");
-    if (!input || input.dataset.zfwAutoLookupFallback === "1") return;
-    input.dataset.zfwAutoLookupFallback = "1";
+  function triggerAirportLookup(input, typed) {
+    if (!input || normalizeIdent(input.value) !== typed) return;
 
-    input.addEventListener("input", function () {
-      const typed = normalizeIdent(input.value);
-      if (!/^[A-Z0-9]{3,5}$/.test(typed)) return;
-      if (!(typed.length === 3 || /^K[A-Z0-9]{3}$/.test(typed) || typed.length === 4 || typed.length === 5)) return;
+    // Prefer the real lookup function when it is exposed. This avoids relying
+    // on a synthetic keyboard event and guarantees the nearest-weather update
+    // runs through the same code path as a real Enter press.
+    if (typeof window.updateResults === "function") {
+      window.updateResults();
+      return;
+    }
+
+    // Fallback for builds where updateResults is not exposed globally.
+    input.dispatchEvent(new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      bubbles: true,
+      cancelable: true
+    }));
+  }
+
+  function validCompleteIdentifier(value) {
+    const typed = normalizeIdent(value);
+    return /^[A-Z0-9]{3,5}$/.test(typed) && (
+      typed.length === 3 ||
+      /^K[A-Z0-9]{3}$/.test(typed) ||
+      typed.length === 4 ||
+      typed.length === 5
+    );
+  }
+
+  function installAutomaticLookupFallback() {
+    // The original app listener is attached directly to the input element.
+    // The login/UI initialization can replace that element, leaving the old
+    // listener behind. A document-level delegated listener survives that.
+    if (document.documentElement.dataset.zfwDelegatedAirportLookup === "1") return;
+    document.documentElement.dataset.zfwDelegatedAirportLookup = "1";
+
+    document.addEventListener("input", function (event) {
+      const target = event.target;
+      if (!target || target.id !== "airportInput") return;
+
+      const typed = normalizeIdent(target.value);
+      if (!validCompleteIdentifier(typed)) return;
 
       setTimeout(function () {
-        if (normalizeIdent(input.value) !== typed) return;
-        input.dispatchEvent(new KeyboardEvent("keydown", {
-          key: "Enter",
-          code: "Enter",
-          bubbles: true,
-          cancelable: true
-        }));
+        triggerAirportLookup(target, typed);
       }, 0);
-    });
+    }, true);
   }
 
   repairAirportAliases();
   installAutomaticLookupFallback();
+
   window.addEventListener("zfw-shared-corrections-updated", repairAirportAliases);
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
+
   setTimeout(repairAirportAliases, 0);
   setTimeout(repairAirportAliases, 250);
   setTimeout(repairAirportAliases, 1000);
