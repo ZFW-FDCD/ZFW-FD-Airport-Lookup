@@ -59,10 +59,11 @@
   async function loadFacilityScripts() {
     try {
       await import("./facility_corrections.js?v=" + Date.now());
+      await import("./facility_seed_data.js?v=" + Date.now());
       await import("./facility_lookup_integration.js?v=" + Date.now());
       return true;
     } catch (error) {
-      console.warn("Could not load facility manager/integration:", error.message || error);
+      console.warn("Could not load facility manager/data/integration:", error.message || error);
       return false;
     }
   }
