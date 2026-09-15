@@ -6,7 +6,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
 
       allow create, update: if request.auth != null
-        && category in ['airports', 'navpoints', 'non_zfw_airports']
+        && category in ['airports', 'navpoints', 'non_zfw_airports', 'facility_contacts']
         && request.resource.data.identifier == identifier;
 
       allow delete: if false;
