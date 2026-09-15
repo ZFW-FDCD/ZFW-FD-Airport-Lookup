@@ -57,7 +57,6 @@
   }
 
   async function loadFacilityScript() {
-    if (window.ZFW_FACILITY_DATA && window.ZFW_FACILITY_DATA._uiLoaded) return true;
     try { await import("./facility_corrections.js?v=" + Date.now()); return true; }
     catch (error) { console.warn("Could not load facility manager:", error.message || error); return false; }
   }
@@ -106,7 +105,17 @@
       let collectionName = "navpoints"; if (isAirportType(type)) collectionName = "airports"; if (nonZfw) collectionName = "non_zfw_airports"; if (facility) collectionName = "facility_contacts";
       const cleanRecord = clone(record); cleanRecord.identifier = ident; cleanRecord.data_category = nonZfw ? "non_zfw_airports" : (facility ? "facility_contacts" : collectionName); cleanRecord.updated_at = serverTimestamp();
       try { await setDoc(doc(db, "zfw_corrections", collectionName, "records", ident), cleanRecord); return true; }
-      catch (firstError) { if (!nonZfw) throw firstError; console.warn("Primary non-ZFW save failed, trying airports fallback:", firstError.message || firstError); await setDoc(doc(db, "zfw_corrections", "airports", "records", ident), cleanRecord); return true; }
+      catch (firstError) {
+        if (facility) {
+          console.warn("Facility collection save failed, using existing airports collection:", firstError.message || firstError);
+          await setDoc(doc(db, "zfw_corrections", "airports", "records", ident), cleanRecord);
+          return true;
+        }
+        if (!nonZfw) throw firstError;
+        console.warn("Primary non-ZFW save failed, trying airports fallback:", firstError.message || firstError);
+        await setDoc(doc(db, "zfw_corrections", "airports", "records", ident), cleanRecord);
+        return true;
+      }
     } catch (error) { console.warn("Could not save Firestore correction:", error.message || error); return false; }
   }
 
