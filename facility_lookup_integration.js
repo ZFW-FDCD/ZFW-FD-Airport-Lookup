@@ -71,11 +71,9 @@
     if (!hours.length) return false;
     const now = new Date();
     const current = now.getHours() * 60 + now.getMinutes();
-
     return hours.some(function (entry) {
       const text = String(entry || "").trim().toUpperCase();
       if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
-
       const closed = text.match(/CLOSED\s+(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
       if (closed) {
         const start = parseClock(closed[1]);
@@ -84,7 +82,6 @@
         const isClosed = start === end ? true : (start < end ? current >= start && current < end : current >= start || current < end);
         return !isClosed;
       }
-
       const open = text.match(/(?:OPEN\s+)?(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
       if (open) {
         const start = parseClock(open[1]);
@@ -97,33 +94,28 @@
 
   function resetFacilityStatus(card) {
     if (!card) return;
-    card.style.borderColor = "";
-    card.style.boxShadow = "";
+    card.style.removeProperty("border-color");
+    card.style.removeProperty("box-shadow");
     card.classList.remove("facility-open", "facility-closed");
   }
 
   function applyClearanceStatus(value, facility) {
     const ident = baseAirportIdent(value);
     if (SPECIAL_FACILITIES.indexOf(ident) === -1 || !facility) return;
-
     const card = document.getElementById("facilityContactCard");
     const approachCard = document.getElementById("approachCard");
     const approach = document.getElementById("approach");
     if (!card) return;
-
     resetFacilityStatus(card);
-
     const open = facilityIsOpen(facility);
     if (open) {
       card.classList.add("facility-open");
-      card.style.borderColor = "var(--green)";
-      card.style.boxShadow = "0 0 0 3px rgba(80,220,120,.25), 0 0 18px rgba(80,220,120,.18)";
+      card.style.setProperty("border-color", "var(--green)", "important");
+      card.style.setProperty("box-shadow", "0 0 0 3px rgba(80,220,120,.25),0 0 18px rgba(80,220,120,.18)", "important");
     } else {
       card.classList.add("facility-closed");
-      card.style.borderColor = "var(--red)";
-      card.style.boxShadow = "0 0 0 3px rgba(255,75,75,.28), 0 0 18px rgba(255,75,75,.24)";
-
-      // When the facility is closed, D10/Approach is the active clearance contact.
+      card.style.setProperty("border-color", "var(--red)", "important");
+      card.style.setProperty("box-shadow", "0 0 0 3px rgba(255,75,75,.28),0 0 18px rgba(255,75,75,.24)", "important");
       if (approachCard && approach) {
         approachCard.style.borderColor = "var(--green)";
         approachCard.style.boxShadow = "";
