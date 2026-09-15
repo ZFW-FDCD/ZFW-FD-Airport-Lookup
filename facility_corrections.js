@@ -45,12 +45,10 @@
   function applyFacilityRecord(ident, record) {
     ident = normalizeIdent(ident);
     if (!ident) return;
-
     const clean = clone(record);
     clean.identifier = ident;
     clean.record_type = "FACILITY";
     getFacilityData().records[ident] = clean;
-
     window.dispatchEvent(new CustomEvent("zfw-facilities-updated"));
   }
 
@@ -120,7 +118,6 @@
     const type = getValue(form, "facilityType");
     const customType = getValue(form, "customFacilityType");
     const existing = findFacility(ident) || {};
-
     const record = Object.assign({}, clone(existing), {
       identifier: ident,
       record_type: "FACILITY",
@@ -139,7 +136,6 @@
       notes: getValue(form, "notes"),
       active: Boolean(form.elements.active && form.elements.active.checked)
     });
-
     return { ident, record };
   }
 
@@ -147,11 +143,9 @@
     const modal = document.getElementById("facilityModal");
     const form = document.getElementById("facilityForm");
     const currentSearch = document.getElementById("airportInput");
-
     clearForm(form);
     showMessage("", false);
     form.elements.active.checked = true;
-
     const currentIdent = normalizeIdent(currentSearch ? currentSearch.value : "");
     if (currentIdent && findFacility(currentIdent)) {
       fillForm(form, currentIdent, findFacility(currentIdent));
@@ -159,7 +153,6 @@
     } else if (currentIdent) {
       setValue(form, "identifier", currentIdent);
     }
-
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("correction-modal-open");
     setTimeout(function () {
@@ -190,7 +183,6 @@
       bindFacilityButton();
       return;
     }
-
     const tools = document.getElementById("correctionTools");
     if (tools && !document.getElementById("addFacilityButton")) {
       const button = document.createElement("button");
@@ -200,7 +192,6 @@
       button.textContent = "Add/Amend Facility";
       tools.appendChild(button);
     }
-
     const style = document.createElement("style");
     style.textContent = `
       #addFacilityButton { background: #475569 !important; }
@@ -210,7 +201,6 @@
       .facility-status-row label { margin: 0 !important; }
     `;
     document.head.appendChild(style);
-
     const modal = document.createElement("div");
     modal.id = "facilityModal";
     modal.className = "correction-modal";
@@ -219,7 +209,6 @@
       <div class="correction-panel" role="dialog" aria-modal="true" aria-labelledby="facilityModalTitle">
         <h2 id="facilityModalTitle">Add / Amend Facility</h2>
         <p>Create a reusable facility record for a TRACON, ARTCC, tower, contract tower, or any other operational facility. Existing airport/D10 records are not changed by saving a facility.</p>
-
         <form id="facilityForm" novalidate>
           <div class="correction-grid">
             <div class="correction-field">
@@ -227,12 +216,10 @@
               <input id="facilityIdentifier" name="identifier" type="text" maxlength="12" required />
               <div class="correction-help">Examples: FTW, AFW, ADS, D10, or another facility identifier.</div>
             </div>
-
             <div class="correction-field">
               <label for="facilityName">Facility Name</label>
               <input id="facilityName" name="facilityName" type="text" />
             </div>
-
             <div class="correction-field">
               <label for="facilityType">Facility Type</label>
               <select id="facilityType" name="facilityType">
@@ -241,71 +228,57 @@
                 <option value="Custom">Custom...</option>
               </select>
             </div>
-
             <div class="correction-field facility-custom-type" data-custom-facility-type>
               <label for="customFacilityType">Custom Facility Type</label>
               <input id="customFacilityType" name="customFacilityType" type="text" placeholder="Enter your own facility type" />
             </div>
-
             <div class="correction-field">
               <label for="controllingFacility">Controlling / Associated Facility</label>
               <input id="controllingFacility" name="controllingFacility" type="text" placeholder="Example: D10" />
             </div>
-
             <div class="correction-field">
               <label for="facilitySector">Sector</label>
               <input id="facilitySector" name="sector" type="text" placeholder="Example: 96 ACT or D10" />
             </div>
-
             <div class="correction-field">
               <label for="facilityArea">Area</label>
               <input id="facilityArea" name="area" type="text" placeholder="Example: DAL" />
             </div>
-
             <div class="correction-field">
               <label for="clearanceContact">Clearance Contact</label>
               <input id="clearanceContact" name="clearanceContact" type="text" placeholder="Facility / position / contact identifier" />
             </div>
-
             <div class="correction-field">
               <label for="facilityPhone">Phone Number</label>
               <input id="facilityPhone" name="phone" type="text" placeholder="Optional" />
             </div>
-
             <div class="correction-field">
-              <label for="facilityHours">Hours</label>
-              <input id="facilityHours" name="hours" type="text" placeholder="0000-2359" />
+              <label for="facilityHours">Facility Hours</label>
+              <input id="facilityHours" name="hours" type="text" placeholder="0000-2359 or 24 x 7" />
             </div>
-
             <div class="correction-field">
               <label for="facilityVscs">VSCS / ID</label>
               <input id="facilityVscs" name="vscs" type="text" placeholder="Optional" />
             </div>
-
             <div class="correction-field">
               <label for="facilityFrequency">Frequency</label>
               <input id="facilityFrequency" name="frequency" type="text" placeholder="Optional" />
             </div>
-
             <div class="correction-field full">
               <label for="facilityAirports">Associated Airports / Identifiers</label>
               <input id="facilityAirports" name="airports" type="text" placeholder="FTW, AFW, ADS" />
               <div class="correction-help">Optional. Separate multiple identifiers with commas. This creates the relationship for future lookup integration without altering existing airport records.</div>
             </div>
-
             <div class="correction-field full">
               <label for="facilityNotes">Additional Notes</label>
               <textarea id="facilityNotes" name="notes" placeholder="Operational notes, special instructions, or source information."></textarea>
             </div>
-
             <div class="correction-field full facility-status-row">
               <input id="facilityActive" name="active" type="checkbox" checked />
               <label for="facilityActive">Facility record is active</label>
             </div>
           </div>
-
           <div id="facilityMessage" class="correction-message"></div>
-
           <div class="correction-actions">
             <button type="button" class="cancel" id="facilityCancel">Cancel</button>
             <button type="submit" id="facilitySubmit">Save Facility</button>
@@ -314,10 +287,8 @@
       </div>
     `;
     document.body.appendChild(modal);
-
     const form = document.getElementById("facilityForm");
     form.elements.facilityType.addEventListener("change", function () { toggleCustomType(form); });
-
     document.getElementById("facilityCancel").addEventListener("click", closeModal);
     modal.addEventListener("click", function (event) {
       if (event.target === modal) closeModal();
@@ -325,11 +296,9 @@
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") closeModal();
     });
-
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       const result = makeRecordFromForm(form);
-
       if (!result.ident) {
         showMessage("Facility ID is required.", true);
         return;
@@ -342,12 +311,10 @@
         showMessage("Facility type is required. Select a type or choose Custom... and enter one.", true);
         return;
       }
-
       const corrections = loadCorrections();
       corrections[result.ident] = result.record;
       saveCorrections(corrections);
       applyFacilityRecord(result.ident, result.record);
-
       if (window.ZFW_SAVE_SHARED_RECORD) {
         window.ZFW_SAVE_SHARED_RECORD("facility_contacts", result.ident, result.record)
           .then(function (saved) {
@@ -362,10 +329,8 @@
       } else {
         showMessage("Facility saved locally only.", false);
       }
-
       setTimeout(closeModal, 700);
     });
-
     bindFacilityButton();
   }
 
