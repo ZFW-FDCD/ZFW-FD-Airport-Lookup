@@ -69,3 +69,10 @@
     }
   });
 })();
+
+// Loaded after the main app so 3-letter airport identifiers always have both
+// bare and K-prefixed lookup aliases. This is deliberately generic and does
+// not contain a HOT-specific exception.
+import("./airport_lookup_collision_fix.js?v=" + Date.now()).catch(function (error) {
+  console.warn("Could not load airport identifier collision fix:", error.message || error);
+});
