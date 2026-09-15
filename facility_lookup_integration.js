@@ -47,6 +47,13 @@
     return [];
   }
 
+  function hasUsableFacilityHours(facility) {
+    return facilityHours(facility).some(function (entry) {
+      const text = String(entry || "").trim().toUpperCase();
+      return text === "24/7" || text === "24 X 7" || /^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || /\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\s*-\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)?/.test(text);
+    });
+  }
+
   function facilityLines(facility) {
     const lines = [];
     if (facility.facility_name) lines.push(["Facility", facility.facility_name]);
@@ -178,7 +185,7 @@
 
   function applyClearanceStatus(value, facility) {
     const ident = baseAirportIdent(value);
-    if (SPECIAL_FACILITIES.indexOf(ident) === -1 || !facility) return;
+    if (!facility || !hasUsableFacilityHours(facility)) return;
     const card = document.getElementById("facilityContactCard");
     const approachCard = document.getElementById("approachCard");
     const approach = document.getElementById("approach");
@@ -189,12 +196,12 @@
       card.classList.add("facility-open");
       card.style.setProperty("border-color", "var(--green)", "important");
       card.style.setProperty("box-shadow", "0 0 0 3px rgba(80,220,120,.25),0 0 18px rgba(80,220,120,.18)", "important");
-      if (approachCard) approachCard.classList.remove("fdcs-green-highlight");
+      if (approachCard && SPECIAL_FACILITIES.indexOf(ident) !== -1) approachCard.classList.remove("fdcs-green-highlight");
     } else {
       card.classList.add("facility-closed");
       card.style.setProperty("border-color", "var(--red)", "important");
       card.style.setProperty("box-shadow", "0 0 0 3px rgba(255,75,75,.28),0 0 18px rgba(255,75,75,.24)", "important");
-      if (approachCard && approach) {
+      if (approachCard && approach && SPECIAL_FACILITIES.indexOf(ident) !== -1) {
         approachCard.style.setProperty("border-color", "var(--green)", "important");
         approachCard.style.setProperty("box-shadow", "", "important");
         approachCard.classList.add("fdcs-green-highlight");
@@ -294,7 +301,7 @@
     }, 0);
 
     // Re-evaluate the facility state so the highlight changes automatically
-    // when the local facility crosses 0600 or 2200 without a new lookup.
+    // when a published facility-hours window opens or closes without a new lookup.
     setInterval(function () {
       if (input && input.value) renderFacility(input.value);
     }, 30000);
