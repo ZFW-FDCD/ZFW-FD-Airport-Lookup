@@ -2,6 +2,7 @@
   "use strict";
 
   const SPECIAL_FACILITIES = ["ADS", "AFW", "FTW"];
+  const FACILITY_TIME_ZONE = "America/Chicago";
 
   function normalizeIdent(value) {
     return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
@@ -74,6 +75,18 @@
     return hour * 60 + minute;
   }
 
+  function centralMinutesNow() {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: FACILITY_TIME_ZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    }).formatToParts(new Date());
+    const hour = Number((parts.find(function (p) { return p.type === "hour"; }) || {}).value || 0);
+    const minute = Number((parts.find(function (p) { return p.type === "minute"; }) || {}).value || 0);
+    return hour * 60 + minute;
+  }
+
   function facilityIsOpen(facility, ident) {
     const base = baseAirportIdent(ident);
     // FTW (Meacham) and AFW (Alliance) are explicitly 24 x 7.
@@ -81,8 +94,7 @@
 
     const hours = facilityHours(facility);
     if (!hours.length) return false;
-    const now = new Date();
-    const current = now.getHours() * 60 + now.getMinutes();
+    const current = centralMinutesNow();
     return hours.some(function (entry) {
       const text = String(entry || "").trim().toUpperCase();
       if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
@@ -91,14 +103,16 @@
         const start = parseClock(closed[1]);
         const end = parseClock(closed[2]);
         if (start === null || end === null) return false;
-        const isClosed = start === end ? true : (start < end ? current >= start && current < end : current >= start || current < end);
+        // Facility hours are Central Time. For Addison's 2200-0600 closure,
+        // 2200 remains open and closure begins at 2201, ending at 0559.
+        const isClosed = start === end ? true : (start < end ? current > start && current < end : current > start || current < end);
         return !isClosed;
       }
       const open = text.match(/(?:OPEN\s+)?(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
       if (open) {
         const start = parseClock(open[1]);
         const end = parseClock(open[2]);
-        if (start !== null && end !== null) return start <= end ? current >= start && current < end : current >= start || current < end;
+        if (start !== null && end !== null) return start <= end ? current >= start && current <= end : current >= start || current <= end;
       }
       return false;
     });
