@@ -47,13 +47,6 @@
     return [];
   }
 
-  function hasUsableFacilityHours(facility) {
-    return facilityHours(facility).some(function (entry) {
-      const text = String(entry || "").trim().toUpperCase();
-      return text === "24/7" || text === "24 X 7" || /^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || /\d{1,2}(?::\d{2})?\s*(?:AM|PM)?\s*-\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)?/.test(text);
-    });
-  }
-
   function facilityLines(facility) {
     const lines = [];
     if (facility.facility_name) lines.push(["Facility", facility.facility_name]);
@@ -70,7 +63,16 @@
   }
 
   function parseClock(value) {
-    const match = String(value || "").trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    const text = String(value || "").trim().toUpperCase();
+    let match = text.match(/^(\d{3,4})$/);
+    if (match) {
+      const digits = match[1];
+      const hour = Number(digits.length === 3 ? digits.slice(0, 1) : digits.slice(0, 2));
+      const minute = Number(digits.slice(-2));
+      if (hour <= 23 && minute <= 59) return hour * 60 + minute;
+      return null;
+    }
+    match = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
     if (!match) return null;
     let hour = Number(match[1]);
     const minute = Number(match[2] || 0);
@@ -86,10 +88,7 @@
 
   function localDateParts(date) {
     const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: FACILITY_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
+      timeZone: FACILITY_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit"
     }).formatToParts(date);
     return {
       year: Number((parts.find(function (p) { return p.type === "year"; }) || {}).value),
@@ -102,14 +101,8 @@
     const localAsUtc = Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day,
       Math.floor(minutes / 60), minutes % 60, 0, 0);
     const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: FACILITY_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23"
+      timeZone: FACILITY_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
     }).formatToParts(new Date(localAsUtc));
     const get = function (type) {
       return Number((parts.find(function (p) { return p.type === type; }) || {}).value || 0);
@@ -124,15 +117,20 @@
     return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
   }
 
+  function parseTimeRange(text) {
+    const normalized = String(text || "").trim().toUpperCase().replace(/[–—]/g, "-");
+    const match = normalized.match(/(?:OPEN\s+)?(.+?)\s*(?:-|\bTO\b)\s*(.+?)(?:\s+LOCAL)?$/i);
+    if (!match) return null;
+    const start = parseClock(match[1]);
+    const end = parseClock(match[2]);
+    if (start === null || end === null) return null;
+    return { start: start, end: end };
+  }
+
   function facilityIsOpen(facility, ident) {
     const base = baseAirportIdent(ident);
-
-    // FTW (Meacham) and AFW (Alliance) are explicitly 24 x 7.
     if (base === "FTW" || base === "AFW") return true;
 
-    // Addison's operational schedule is 0600-2200 Central local time.
-    // The application clock remains Zulu. We convert the local schedule
-    // boundaries into UTC instants and compare the real UTC clock to them.
     if (base === "ADS") {
       const now = Date.now();
       const today = localDateParts(new Date(now));
@@ -142,38 +140,29 @@
     }
 
     const hours = facilityHours(facility);
-    if (!hours.length) return false;
+    if (!hours.length) return null;
     const now = Date.now();
     const localToday = localDateParts(new Date(now));
+    let foundSchedule = false;
 
-    return hours.some(function (entry) {
-      const text = String(entry || "").trim().toUpperCase();
+    for (let i = 0; i < hours.length; i++) {
+      const text = String(hours[i] || "").trim().toUpperCase();
       if (/^24\s*(X|HOURS?|HR|HRS)?\s*7$/.test(text) || text === "24 X 7" || text === "24/7") return true;
-
-      const closed = text.match(/CLOSED\s+(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
-      if (closed) {
-        const start = parseClock(closed[1]);
-        const end = parseClock(closed[2]);
-        if (start === null || end === null) return false;
-        const startUtc = localWallClockToUtc(localToday, start);
-        const endDate = start === end || end <= start ? shiftDate(localToday, 1) : localToday;
-        const endUtc = localWallClockToUtc(endDate, end);
-        const isClosed = start === end ? true : (now > startUtc && now < endUtc);
-        return !isClosed;
+      const isClosedSchedule = /^CLOSED\b/i.test(text);
+      const range = parseTimeRange(text.replace(/^CLOSED\s+/i, ""));
+      if (!range) continue;
+      foundSchedule = true;
+      const startUtc = localWallClockToUtc(localToday, range.start);
+      const endDate = range.end <= range.start ? shiftDate(localToday, 1) : localToday;
+      const endUtc = localWallClockToUtc(endDate, range.end);
+      const inRange = now >= startUtc && now <= endUtc;
+      if (isClosedSchedule) {
+        if (inRange) return false;
+      } else if (inRange) {
+        return true;
       }
-
-      const open = text.match(/(?:OPEN\s+)?(.+?)\s*-\s*(.+?)(?:\s+LOCAL)?$/i);
-      if (open) {
-        const start = parseClock(open[1]);
-        const end = parseClock(open[2]);
-        if (start === null || end === null) return false;
-        const startUtc = localWallClockToUtc(localToday, start);
-        const endDate = end < start ? shiftDate(localToday, 1) : localToday;
-        const endUtc = localWallClockToUtc(endDate, end);
-        return now >= startUtc && now <= endUtc;
-      }
-      return false;
-    });
+    }
+    return foundSchedule ? false : null;
   }
 
   function resetFacilityStatus(card) {
@@ -185,13 +174,15 @@
 
   function applyClearanceStatus(value, facility) {
     const ident = baseAirportIdent(value);
-    if (!facility || !hasUsableFacilityHours(facility)) return;
     const card = document.getElementById("facilityContactCard");
     const approachCard = document.getElementById("approachCard");
     const approach = document.getElementById("approach");
     if (!card) return;
     resetFacilityStatus(card);
+
     const open = facilityIsOpen(facility, ident);
+    if (open === null) return;
+
     if (open) {
       card.classList.add("facility-open");
       card.style.setProperty("border-color", "var(--green)", "important");
@@ -299,9 +290,6 @@
       renderFacility(input ? input.value : "");
       renderOmicFacility(omicInput ? omicInput.value : "");
     }, 0);
-
-    // Re-evaluate the facility state so the highlight changes automatically
-    // when a published facility-hours window opens or closes without a new lookup.
     setInterval(function () {
       if (input && input.value) renderFacility(input.value);
     }, 30000);
