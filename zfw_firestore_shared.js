@@ -33,7 +33,19 @@
     const records = getAirportRecords();
     if (isNonZfwType(type) || recordIsNonZfw(record)) { const adjacent = getAdjacentData(); let cleanIdent = ident; if (cleanIdent.length === 4 && cleanIdent.startsWith("K")) cleanIdent = cleanIdent.slice(1); const center = String(record.center || "").toUpperCase(); const cleanRecord = { center: center, name: record.name || record.airport_name || cleanIdent, fdcd: record.fdcd || "" }; adjacent.airports[cleanIdent] = cleanRecord; adjacent.airports["K" + cleanIdent] = cleanRecord; notifyDataChanged(); return; }
     if (isAirportType(type)) { records[ident] = record; if (ident.length === 4 && ident.startsWith("K")) records[ident.slice(1)] = clone(record); else if (ident.length === 3) records["K" + ident] = clone(record); notifyDataChanged(); return; }
-    if (ident.length === 4 && ident.startsWith("K")) ident = ident.slice(1); record.record_type = record.record_type || record.type || "WAYPOINT"; record.airport_name = record.airport_name || record.name || ident; if (record.nearest_wx) record.nearest_wx = normalizeIdent(record.nearest_wx); getNavData()[ident] = clone(record); records[ident] = clone(record); const fakeK = "K" + ident; if (records[fakeK] && String(records[fakeK].record_type || "").toUpperCase() !== "AIRPORT") delete records[fakeK]; notifyDataChanged();
+
+    // Navaids/waypoints are a separate entity class from airports. Never write a
+    // shared nav correction into AIRPORT_DATA.records, because the two entities
+    // can legitimately have the same identifier (for example HOT). Keeping nav
+    // corrections in ZFW_NAV_DATA prevents a nav record from overwriting an
+    // airport record during Firestore load or live updates.
+    let navIdent = ident;
+    if (navIdent.length === 4 && navIdent.startsWith("K")) navIdent = navIdent.slice(1);
+    record.record_type = record.record_type || record.type || "WAYPOINT";
+    record.airport_name = record.airport_name || record.name || navIdent;
+    if (record.nearest_wx) record.nearest_wx = normalizeIdent(record.nearest_wx);
+    getNavData()[navIdent] = clone(record);
+    notifyDataChanged();
   }
 
   function notifyDataChanged() {
