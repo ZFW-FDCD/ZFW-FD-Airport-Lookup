@@ -11,7 +11,7 @@
 
   function isCompleteLookupIdent(ident){
     ident = normalizeIdent(ident);
-    return /^[A-Z0-9]{3}$/.test(ident) || /^K[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident) || /^[A-Z0-9]{5}$/.test(ident);
+    return /^[A-Z0-9]{2,5}$/.test(ident);
   }
 
   function ensureAirportData(){
@@ -697,11 +697,11 @@
     const group=document.createElement("div"); group.style.display="flex"; group.style.alignItems="center"; group.style.gap="8px"; group.style.flex="0 0 auto";
     const label=document.createElement("label"); label.htmlFor="waypointInput"; label.textContent="WAYPOINT / NAVAID"; label.style.margin="0"; label.style.whiteSpace="nowrap";
     if(airportLabel){ const ls=getComputedStyle(airportLabel); label.style.font=ls.font; label.style.fontWeight=ls.fontWeight; label.style.fontSize=ls.fontSize; label.style.color=ls.color; label.style.letterSpacing=ls.letterSpacing; }
-    const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=8; input.spellcheck=false;
+    const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=5; input.spellcheck=false;
     ["width","height","minHeight","font","color","backgroundColor","border","borderRadius","padding","textAlign","letterSpacing","caretColor"].forEach(p=>input.style[p]=cs[p]);
     group.appendChild(label); group.appendChild(input); parent.appendChild(group);
     function run(){ const id=normalizeIdent(input.value); input.value=id; if(!id)return; if(!lookupWaypoint(id)){ const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
-    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
+    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=2) run(); });
     input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
   }
 
