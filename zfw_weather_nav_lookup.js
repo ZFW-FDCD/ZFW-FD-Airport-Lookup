@@ -706,7 +706,11 @@
   }
 
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
-  window.ZFW_MERGE_NAV_DATA = mergeNavData;\n  window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;\n  installWaypointLookupBox();\n  setTimeout(installWaypointLookupBox, 250);\n  setTimeout(installWaypointLookupBox, 1000);
+  window.ZFW_MERGE_NAV_DATA = mergeNavData;
+  window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
+  installWaypointLookupBox();
+  setTimeout(installWaypointLookupBox, 250);
+  setTimeout(installWaypointLookupBox, 1000);
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire);
   else wire();
