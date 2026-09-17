@@ -110,11 +110,16 @@
       const airportInput = document.getElementById("airportInput");
       if (!airportInput) return;
 
+      // Reuse the proven navaid/weather lookup engine through the existing
+      // airport input as a temporary proxy, without leaving the waypoint
+      // identifier in the visible airport field.
+      const savedAirportValue = airportInput.value;
       airportInput.value = typed;
       airportInput.dispatchEvent(new Event("input", {bubbles:true, cancelable:true}));
 
       window.__zfwWaypointBridgeTimer = setTimeout(function () {
         window.__zfwWaypointBridgeActive = false;
+        airportInput.value = savedAirportValue;
         input.value = "";
       }, 900);
     });
@@ -133,9 +138,32 @@
     window.__zfwAirportOnlyGuardInstalled = true;
 
     document.addEventListener("input", function (event) {
-      if (event.target && event.target.id === "airportInput" && !window.__zfwWaypointBridgeActive) {
-        const typed = normalizeIdent(event.target.value);
-        if (typed.length >= 3) repairAirportAliases();
+      if (!event.target || event.target.id !== "airportInput") return;
+      if (window.__zfwWaypointBridgeActive) return;
+
+      const typed = normalizeIdent(event.target.value);
+      if (typed.length < 3) return;
+
+      repairAirportAliases();
+
+      // Airport entry is airport-only. If this identifier exists only as a
+      // navaid/fix, stop the legacy airport handler before it can display the
+      // navaid as an airport result.
+      const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+      const base = typed.length === 4 && typed.charAt(0) === "K" ? typed.slice(1) : typed;
+      if (/^[A-Z0-9]{3}$/.test(base)) {
+        const airport = records["K" + base] || records[base];
+        const navSources = Object.assign({}, window.ZFW_NAV_DATA || {}, window.ZFW_SUPPLEMENTAL_NAVAIDS || {}, window.ZFW_SUPPLEMENTAL_WAYPOINTS || {});
+        const navOnly = !isAirportRecord(airport) && (isNavRecord(records[base]) || !!navSources[base]);
+        if (navOnly) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          const status = document.getElementById("status");
+          if (status) {
+            status.textContent = base + " not found";
+            status.style.color = "var(--red)";
+          }
+        }
       }
     }, true);
   }
