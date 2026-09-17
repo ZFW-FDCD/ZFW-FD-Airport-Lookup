@@ -657,7 +657,13 @@
     const typedIdent = normalizeIdent(identifier || "");
     if(!typedIdent || !isCompleteLookupIdent(typedIdent)) return false;
 
-    const record = getRecord(typedIdent);
+    let record = getRecord(typedIdent);
+    if(!record || !isNavType(record)) {
+      const navData = sourceNavData();
+      const base = (typedIdent.length === 4 && typedIdent.startsWith("K")) ? typedIdent.slice(1) : typedIdent;
+      const source = navData[typedIdent] || navData[base] || (base.length === 3 ? navData["K" + base] : null);
+      if(source) record = normalizeNavRecord(base, source);
+    }
     if(!record || !isNavType(record)) return false;
 
     forceStatus(typedIdent + " found");
