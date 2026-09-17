@@ -60,6 +60,86 @@
     });
   }
 
+
+  function installWaypointBox() {
+    if (document.getElementById("waypointInput")) return;
+    const airport = document.getElementById("airportInput");
+    if (!airport || !airport.parentElement) return;
+
+    const label = document.createElement("label");
+    label.htmlFor = "waypointInput";
+    label.textContent = "WAYPOINT / NAVAID";
+
+    const input = document.createElement("input");
+    input.id = "waypointInput";
+    input.type = "text";
+    input.autocomplete = "off";
+    input.maxLength = 8;
+    input.spellcheck = false;
+    input.placeholder = "";
+    input.style.width = getComputedStyle(airport).width;
+    input.style.boxSizing = "border-box";
+    input.style.font = getComputedStyle(airport).font;
+    input.style.color = getComputedStyle(airport).color;
+    input.style.background = getComputedStyle(airport).backgroundColor;
+    input.style.border = getComputedStyle(airport).border;
+    input.style.borderRadius = getComputedStyle(airport).borderRadius;
+    input.style.padding = getComputedStyle(airport).padding;
+
+    const wrap = document.createElement("div");
+    wrap.className = "zfw-waypoint-lookup";
+    wrap.style.display = "inline-flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.gap = getComputedStyle(airport.parentElement).gap || "6px";
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+
+    const parent = airport.parentElement;
+    parent.style.display = "flex";
+    parent.style.alignItems = "flex-start";
+    parent.style.gap = "18px";
+    parent.appendChild(wrap);
+
+    input.addEventListener("input", function () {
+      const typed = normalizeIdent(input.value);
+      input.value = typed;
+      if (!typed) return;
+      if (window.__zfwWaypointBridgeTimer) clearTimeout(window.__zfwWaypointBridgeTimer);
+      window.__zfwWaypointBridgeActive = true;
+
+      const airportInput = document.getElementById("airportInput");
+      if (!airportInput) return;
+
+      airportInput.value = typed;
+      airportInput.dispatchEvent(new Event("input", {bubbles:true, cancelable:true}));
+
+      window.__zfwWaypointBridgeTimer = setTimeout(function () {
+        window.__zfwWaypointBridgeActive = false;
+        input.value = "";
+      }, 900);
+    });
+
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.dispatchEvent(new Event("input", {bubbles:true, cancelable:true}));
+      }
+    });
+  }
+
+  function keepAirportLookupAirportOnly() {
+    const input = document.getElementById("airportInput");
+    if (!input || window.__zfwAirportOnlyGuardInstalled) return;
+    window.__zfwAirportOnlyGuardInstalled = true;
+
+    document.addEventListener("input", function (event) {
+      if (event.target && event.target.id === "airportInput" && !window.__zfwWaypointBridgeActive) {
+        const typed = normalizeIdent(event.target.value);
+        if (typed.length >= 3) repairAirportAliases();
+      }
+    }, true);
+  }
+
   function validCompleteIdentifier(value) {
     const typed = normalizeIdent(value);
     return /^[A-Z0-9]{3,5}$/.test(typed) && (
@@ -120,6 +200,10 @@
 
   repairAirportAliases();
   installAutomaticLookupFallback();
+  keepAirportLookupAirportOnly();
+  installWaypointBox();
+  setTimeout(installWaypointBox, 250);
+  setTimeout(installWaypointBox, 1000);
 
   window.addEventListener("zfw-shared-corrections-updated", repairAirportAliases);
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
