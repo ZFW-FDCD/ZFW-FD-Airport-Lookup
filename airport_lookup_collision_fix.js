@@ -66,9 +66,35 @@
     const airport = document.getElementById("airportInput");
     if (!airport || !airport.parentElement) return;
 
+    const parent = airport.parentElement;
+    const airportLabel = parent.querySelector('label[for="airportInput"]');
+    const airportStyle = getComputedStyle(airport);
+
+    parent.style.display = "flex";
+    parent.style.alignItems = "center";
+    parent.style.flexWrap = "nowrap";
+    parent.style.gap = "18px";
+
+    const group = document.createElement("div");
+    group.className = "zfw-waypoint-lookup";
+    group.style.display = "flex";
+    group.style.alignItems = "center";
+    group.style.gap = "8px";
+    group.style.flex = "0 0 auto";
+
     const label = document.createElement("label");
     label.htmlFor = "waypointInput";
     label.textContent = "WAYPOINT / NAVAID";
+    if (airportLabel) {
+      const labelStyle = getComputedStyle(airportLabel);
+      label.style.font = labelStyle.font;
+      label.style.fontWeight = labelStyle.fontWeight;
+      label.style.fontSize = labelStyle.fontSize;
+      label.style.color = labelStyle.color;
+      label.style.letterSpacing = labelStyle.letterSpacing;
+      label.style.margin = "0";
+      label.style.whiteSpace = "nowrap";
+    }
 
     const input = document.createElement("input");
     input.id = "waypointInput";
@@ -76,62 +102,49 @@
     input.autocomplete = "off";
     input.maxLength = 8;
     input.spellcheck = false;
-    input.placeholder = "";
-    input.style.width = getComputedStyle(airport).width;
+    input.style.width = airportStyle.width;
+    input.style.height = airportStyle.height;
+    input.style.minHeight = airportStyle.minHeight;
     input.style.boxSizing = "border-box";
-    input.style.font = getComputedStyle(airport).font;
-    input.style.color = getComputedStyle(airport).color;
-    input.style.background = getComputedStyle(airport).backgroundColor;
-    input.style.border = getComputedStyle(airport).border;
-    input.style.borderRadius = getComputedStyle(airport).borderRadius;
-    input.style.padding = getComputedStyle(airport).padding;
+    input.style.font = airportStyle.font;
+    input.style.color = airportStyle.color;
+    input.style.background = airportStyle.backgroundColor;
+    input.style.border = airportStyle.border;
+    input.style.borderRadius = airportStyle.borderRadius;
+    input.style.padding = airportStyle.padding;
+    input.style.textAlign = airportStyle.textAlign;
+    input.style.letterSpacing = airportStyle.letterSpacing;
+    input.style.caretColor = airportStyle.caretColor;
 
-    const wrap = document.createElement("div");
-    wrap.className = "zfw-waypoint-lookup";
-    wrap.style.display = "inline-flex";
-    wrap.style.flexDirection = "column";
-    wrap.style.gap = getComputedStyle(airport.parentElement).gap || "6px";
-    wrap.appendChild(label);
-    wrap.appendChild(input);
+    group.appendChild(label);
+    group.appendChild(input);
+    parent.appendChild(group);
 
-    const parent = airport.parentElement;
-    parent.style.display = "flex";
-    parent.style.alignItems = "flex-start";
-    parent.style.gap = "18px";
-    parent.appendChild(wrap);
-
-    input.addEventListener("input", function () {
+    function performWaypointLookup() {
       const typed = normalizeIdent(input.value);
       input.value = typed;
       if (!typed) return;
-      if (window.__zfwWaypointBridgeTimer) clearTimeout(window.__zfwWaypointBridgeTimer);
-      window.__zfwWaypointBridgeActive = true;
+      if (typeof window.ZFW_LOOKUP_WAYPOINT === "function") {
+        if (!window.ZFW_LOOKUP_WAYPOINT(typed)) {
+          const status = document.getElementById("status");
+          if (status) {
+            status.textContent = typed + " not found";
+            status.style.color = "var(--red)";
+          }
+        }
+      }
+    }
 
-      const airportInput = document.getElementById("airportInput");
-      if (!airportInput) return;
-
-      // Reuse the proven navaid/weather lookup engine through the existing
-      // airport input as a temporary proxy, without leaving the waypoint
-      // identifier in the visible airport field.
-      const savedAirportValue = airportInput.value;
-      airportInput.value = typed;
-      airportInput.dispatchEvent(new Event("input", {bubbles:true, cancelable:true}));
-
-      window.__zfwWaypointBridgeTimer = setTimeout(function () {
-        window.__zfwWaypointBridgeActive = false;
-        airportInput.value = savedAirportValue;
-        input.value = "";
-      }, 900);
+    input.addEventListener("input", function () {
+      if (normalizeIdent(input.value).length >= 3) performWaypointLookup();
     });
-
     input.addEventListener("keydown", function (event) {
       if (event.key === "Enter") {
         event.preventDefault();
-        input.dispatchEvent(new Event("input", {bubbles:true, cancelable:true}));
+        performWaypointLookup();
       }
     });
   }
-
   function keepAirportLookupAirportOnly() {
     const input = document.getElementById("airportInput");
     if (!input || window.__zfwAirportOnlyGuardInstalled) return;
