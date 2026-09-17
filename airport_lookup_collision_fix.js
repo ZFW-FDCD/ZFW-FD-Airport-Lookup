@@ -61,90 +61,7 @@
   }
 
 
-  function installWaypointBox() {
-    if (document.getElementById("waypointInput")) return;
-    const airport = document.getElementById("airportInput");
-    if (!airport || !airport.parentElement) return;
 
-    const parent = airport.parentElement;
-    const airportLabel = parent.querySelector('label[for="airportInput"]');
-    const airportStyle = getComputedStyle(airport);
-
-    parent.style.display = "flex";
-    parent.style.alignItems = "center";
-    parent.style.flexWrap = "nowrap";
-    parent.style.gap = "18px";
-
-    const group = document.createElement("div");
-    group.className = "zfw-waypoint-lookup";
-    group.style.display = "flex";
-    group.style.alignItems = "center";
-    group.style.gap = "8px";
-    group.style.flex = "0 0 auto";
-
-    const label = document.createElement("label");
-    label.htmlFor = "waypointInput";
-    label.textContent = "WAYPOINT / NAVAID";
-    if (airportLabel) {
-      const labelStyle = getComputedStyle(airportLabel);
-      label.style.font = labelStyle.font;
-      label.style.fontWeight = labelStyle.fontWeight;
-      label.style.fontSize = labelStyle.fontSize;
-      label.style.color = labelStyle.color;
-      label.style.letterSpacing = labelStyle.letterSpacing;
-      label.style.margin = "0";
-      label.style.whiteSpace = "nowrap";
-    }
-
-    const input = document.createElement("input");
-    input.id = "waypointInput";
-    input.type = "text";
-    input.autocomplete = "off";
-    input.maxLength = 8;
-    input.spellcheck = false;
-    input.style.width = airportStyle.width;
-    input.style.height = airportStyle.height;
-    input.style.minHeight = airportStyle.minHeight;
-    input.style.boxSizing = "border-box";
-    input.style.font = airportStyle.font;
-    input.style.color = airportStyle.color;
-    input.style.background = airportStyle.backgroundColor;
-    input.style.border = airportStyle.border;
-    input.style.borderRadius = airportStyle.borderRadius;
-    input.style.padding = airportStyle.padding;
-    input.style.textAlign = airportStyle.textAlign;
-    input.style.letterSpacing = airportStyle.letterSpacing;
-    input.style.caretColor = airportStyle.caretColor;
-
-    group.appendChild(label);
-    group.appendChild(input);
-    parent.appendChild(group);
-
-    function performWaypointLookup() {
-      const typed = normalizeIdent(input.value);
-      input.value = typed;
-      if (!typed) return;
-      if (typeof window.ZFW_LOOKUP_WAYPOINT === "function") {
-        if (!window.ZFW_LOOKUP_WAYPOINT(typed)) {
-          const status = document.getElementById("status");
-          if (status) {
-            status.textContent = typed + " not found";
-            status.style.color = "var(--red)";
-          }
-        }
-      }
-    }
-
-    input.addEventListener("input", function () {
-      if (normalizeIdent(input.value).length >= 3) performWaypointLookup();
-    });
-    input.addEventListener("keydown", function (event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        performWaypointLookup();
-      }
-    });
-  }
   function keepAirportLookupAirportOnly() {
     const input = document.getElementById("airportInput");
     if (!input || window.__zfwAirportOnlyGuardInstalled) return;
@@ -242,9 +159,6 @@
   repairAirportAliases();
   installAutomaticLookupFallback();
   keepAirportLookupAirportOnly();
-  installWaypointBox();
-  setTimeout(installWaypointBox, 250);
-  setTimeout(installWaypointBox, 1000);
 
   window.addEventListener("zfw-shared-corrections-updated", repairAirportAliases);
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
