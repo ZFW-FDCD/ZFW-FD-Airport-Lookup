@@ -653,8 +653,35 @@
     writeNearest(output, nearest, typedIdent, record);
   }
 
+  function lookupWaypoint(identifier){
+    const typedIdent = normalizeIdent(identifier || "");
+    if(!typedIdent || !isCompleteLookupIdent(typedIdent)) return false;
+
+    const record = getRecord(typedIdent);
+    if(!record || !isNavType(record)) return false;
+
+    forceStatus(typedIdent + " found");
+    clearAirportOutputsForNav(record);
+    hideMapForNav(record);
+
+    const nearest = calculateNearest(record);
+    const output = document.getElementById("nearestWeather");
+    if(nearest && output){
+      output.textContent = nearest.id;
+      output.title = nearest.title || "";
+      lastLookupIdent = typedIdent;
+      lastDisplayedWx = nearest.id;
+      lastDisplayedTitle = nearest.title || "";
+      lastFoundWasNav = true;
+      lastFoundRecord = record;
+      setNearestHighlight(true);
+    }
+
+    return true;
+  }
+
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
-  window.ZFW_MERGE_NAV_DATA = mergeNavData;
+  window.ZFW_MERGE_NAV_DATA = mergeNavData;\n  window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire);
   else wire();
