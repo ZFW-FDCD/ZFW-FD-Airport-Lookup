@@ -686,8 +686,27 @@
     return true;
   }
 
+  function installWaypointLookupBox(){
+    if(document.getElementById("waypointInput")) return;
+    const airport=document.getElementById("airportInput");
+    if(!airport || !airport.parentElement) return;
+    const parent=airport.parentElement;
+    const airportLabel=parent.querySelector('label[for="airportInput"]');
+    const cs=getComputedStyle(airport);
+    parent.style.display="flex"; parent.style.alignItems="center"; parent.style.flexWrap="nowrap"; parent.style.gap="18px";
+    const group=document.createElement("div"); group.style.display="flex"; group.style.alignItems="center"; group.style.gap="8px"; group.style.flex="0 0 auto";
+    const label=document.createElement("label"); label.htmlFor="waypointInput"; label.textContent="WAYPOINT / NAVAID"; label.style.margin="0"; label.style.whiteSpace="nowrap";
+    if(airportLabel){ const ls=getComputedStyle(airportLabel); label.style.font=ls.font; label.style.fontWeight=ls.fontWeight; label.style.fontSize=ls.fontSize; label.style.color=ls.color; label.style.letterSpacing=ls.letterSpacing; }
+    const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=8; input.spellcheck=false;
+    ["width","height","minHeight","font","color","backgroundColor","border","borderRadius","padding","textAlign","letterSpacing","caretColor"].forEach(p=>input.style[p]=cs[p]);
+    group.appendChild(label); group.appendChild(input); parent.appendChild(group);
+    function run(){ const id=normalizeIdent(input.value); input.value=id; if(!id)return; if(!lookupWaypoint(id)){ const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
+    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
+    input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
+  }
+
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
-  window.ZFW_MERGE_NAV_DATA = mergeNavData;\n  window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
+  window.ZFW_MERGE_NAV_DATA = mergeNavData;\n  window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;\n  installWaypointLookupBox();\n  setTimeout(installWaypointLookupBox, 250);\n  setTimeout(installWaypointLookupBox, 1000);
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire);
   else wire();
