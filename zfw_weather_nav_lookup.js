@@ -705,12 +705,12 @@
       if(document.getElementById("waypointEntryInstruction")) return;
       const output=document.getElementById("nearestWeather");
       const card=output ? (output.closest(".card") || output.parentElement) : null;
-      if(!card || !card.parentElement) return;
+      if(!card) return;
 
       const note=document.createElement("div");
       note.id="waypointEntryInstruction";
       note.textContent="Enter 2–5 characters · Press ENTER to search";
-      note.style.margin="3px 0 0";
+      note.style.margin="4px 0 0";
       note.style.fontSize="0.72rem";
       note.style.lineHeight="1.15";
       note.style.fontWeight="700";
@@ -721,7 +721,7 @@
       note.style.whiteSpace="nowrap";
       note.style.pointerEvents="none";
       note.style.padding="0";
-      card.parentElement.insertBefore(note, card.nextSibling);
+      card.appendChild(note);
     }
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
