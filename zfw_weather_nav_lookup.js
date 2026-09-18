@@ -700,9 +700,36 @@
     const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=5; input.spellcheck=false;
     ["width","height","minHeight","font","color","backgroundColor","border","borderRadius","padding","textAlign","letterSpacing","caretColor"].forEach(p=>input.style[p]=cs[p]);
     group.appendChild(label); group.appendChild(input); parent.appendChild(group);
+
+    function installWaypointInstruction(){
+      if(document.getElementById("waypointEntryInstruction")) return;
+      const output=document.getElementById("nearestWeather");
+      const card=output ? (output.closest(".card") || output.parentElement) : null;
+      if(!card || !card.parentElement) return;
+
+      const note=document.createElement("div");
+      note.id="waypointEntryInstruction";
+      note.textContent="Enter 2–5 characters · Press ENTER to search";
+      note.style.margin="3px 0 0";
+      note.style.fontSize="0.72rem";
+      note.style.lineHeight="1.15";
+      note.style.fontWeight="700";
+      note.style.letterSpacing="0.15px";
+      note.style.color="var(--cyan)";
+      note.style.opacity="0.88";
+      note.style.textAlign="center";
+      note.style.whiteSpace="nowrap";
+      note.style.pointerEvents="none";
+      note.style.padding="0";
+      card.parentElement.insertBefore(note, card.nextSibling);
+    }
+
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
     input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
     input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
+    installWaypointInstruction();
+    setTimeout(installWaypointInstruction,250);
+    setTimeout(installWaypointInstruction,1000);
   }
 
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
