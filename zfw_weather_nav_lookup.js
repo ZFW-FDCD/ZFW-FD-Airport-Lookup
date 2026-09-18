@@ -700,7 +700,7 @@
     const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=5; input.spellcheck=false;
     ["width","height","minHeight","font","color","backgroundColor","border","borderRadius","padding","textAlign","letterSpacing","caretColor"].forEach(p=>input.style[p]=cs[p]);
     group.appendChild(label); group.appendChild(input); parent.appendChild(group);
-    function run(){ const id=normalizeIdent(input.value); input.value=id; if(!id)return; if(lookupWaypoint(id)){ input.value = ""; } else { const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
+    function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
     input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=2) run(); });
     input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
   }
