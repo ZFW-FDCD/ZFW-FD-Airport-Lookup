@@ -694,35 +694,31 @@
     const airportLabel=parent.querySelector('label[for="airportInput"]');
     const cs=getComputedStyle(airport);
     parent.style.display="flex"; parent.style.alignItems="center"; parent.style.flexWrap="nowrap"; parent.style.gap="18px";
-    const group=document.createElement("div"); group.style.display="flex"; group.style.alignItems="center"; group.style.gap="8px"; group.style.flex="0 0 auto";
+    const group=document.createElement("div"); group.style.display="flex"; group.style.flexDirection="column"; group.style.alignItems="center"; group.style.gap="2px"; group.style.flex="0 0 auto";
+    const entryRow=document.createElement("div"); entryRow.style.display="flex"; entryRow.style.alignItems="center"; entryRow.style.gap="8px";
     const label=document.createElement("label"); label.htmlFor="waypointInput"; label.textContent="WAYPOINT / NAVAID"; label.style.margin="0"; label.style.whiteSpace="nowrap";
     if(airportLabel){ const ls=getComputedStyle(airportLabel); label.style.font=ls.font; label.style.fontWeight=ls.fontWeight; label.style.fontSize=ls.fontSize; label.style.color=ls.color; label.style.letterSpacing=ls.letterSpacing; }
     const input=document.createElement("input"); input.id="waypointInput"; input.type="text"; input.autocomplete="off"; input.maxLength=5; input.spellcheck=false;
     ["width","height","minHeight","font","color","backgroundColor","border","borderRadius","padding","textAlign","letterSpacing","caretColor"].forEach(p=>input.style[p]=cs[p]);
-    group.appendChild(label); group.appendChild(input); parent.appendChild(group);
+    entryRow.appendChild(label); entryRow.appendChild(input);
 
-    function installWaypointInstruction(){
-      if(document.getElementById("waypointEntryInstruction")) return;
-      const output=document.getElementById("nearestWeather");
-      const card=output ? (output.closest(".card") || output.parentElement) : null;
-      if(!card) return;
-
-      const note=document.createElement("div");
-      note.id="waypointEntryInstruction";
-      note.textContent="Enter 2–5 characters · Press ENTER to search";
-      note.style.margin="4px 0 0";
-      note.style.fontSize="0.72rem";
-      note.style.lineHeight="1.15";
-      note.style.fontWeight="700";
-      note.style.letterSpacing="0.15px";
-      note.style.color="var(--cyan)";
-      note.style.opacity="0.88";
-      note.style.textAlign="center";
-      note.style.whiteSpace="nowrap";
-      note.style.pointerEvents="none";
-      note.style.padding="0";
-      card.appendChild(note);
-    }
+    const note=document.createElement("div");
+    note.id="waypointEntryInstruction";
+    note.textContent="Enter 2–5 characters · Press ENTER to search";
+    note.style.margin="1px 0 0";
+    note.style.fontSize="0.68rem";
+    note.style.lineHeight="1.1";
+    note.style.fontWeight="700";
+    note.style.letterSpacing="0.1px";
+    note.style.color="var(--cyan)";
+    note.style.opacity="0.88";
+    note.style.textAlign="center";
+    note.style.whiteSpace="nowrap";
+    note.style.pointerEvents="none";
+    note.style.padding="0";
+    group.appendChild(entryRow);
+    group.appendChild(note);
+    parent.appendChild(group);
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
     input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
