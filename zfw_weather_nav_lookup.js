@@ -699,7 +699,7 @@
     if(airportLabel){ const ls=getComputedStyle(airportLabel); label.style.font=ls.font; label.style.fontWeight=ls.fontWeight; label.style.fontSize=ls.fontSize; label.style.color=ls.color; label.style.letterSpacing=ls.letterSpacing; }
 
     const shell=document.createElement("div");
-    shell.style.width="190px";
+    shell.style.width="230px";
     shell.style.height="48px";
     shell.style.boxSizing="border-box";
     shell.style.display="flex";
