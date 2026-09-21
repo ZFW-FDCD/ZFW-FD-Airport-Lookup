@@ -586,6 +586,7 @@
   function wire(){
     injectHighlightStyle();
     mergeNavData();
+    if(window.ZFW_UNIFIED_SEARCH) return;
 
     const input = document.getElementById("airportInput");
     if(input) ["input","change","keyup","blur"].forEach(evt => input.addEventListener(evt, scheduleUpdate));
@@ -648,7 +649,18 @@
     }
 
     const nearest = calculateNearest(record);
-    if(!nearest) return;
+    if(!nearest){
+      output.textContent = "—";
+      output.title = "No nearest weather reporting station assigned.";
+      lastLookupIdent = typedIdent;
+      lastDisplayedWx = "";
+      lastDisplayedTitle = "";
+      lastFoundWasNav = false;
+      lastFoundRecord = record || null;
+      setNearestHighlight(false);
+      hideMapForNav(record);
+      return;
+    }
 
     writeNearest(output, nearest, typedIdent, record);
   }
@@ -687,6 +699,7 @@
   }
 
   function installWaypointLookupBox(){
+    if(window.ZFW_UNIFIED_SEARCH) return;
     if(document.getElementById("waypointInput")) return;
     const airport=document.getElementById("airportInput");
     if(!airport || !airport.parentElement) return;
@@ -752,6 +765,7 @@
     setTimeout(installWaypointInstruction,1000);
   }
 
+  window.ZFW_UNIFIED_SEARCH = true;
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
   window.ZFW_MERGE_NAV_DATA = mergeNavData;
   window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
@@ -774,10 +788,7 @@
 
   function isCompleteLookupIdent(value) {
     const ident = normalizeIdent(value);
-    return /^[A-Z0-9]{3}$/.test(ident) ||
-      /^K[A-Z0-9]{3}$/.test(ident) ||
-      /^[A-Z0-9]{4}$/.test(ident) ||
-      /^[A-Z0-9]{5}$/.test(ident);
+    return /^[A-Z0-9]{2,5}$/.test(ident);
   }
 
   function airportRecords() {
