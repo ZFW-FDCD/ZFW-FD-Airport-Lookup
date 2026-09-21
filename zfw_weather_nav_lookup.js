@@ -894,6 +894,7 @@
   }
 
   function bindNavaidEntryProtection() {
+    if (window.ZFW_UNIFIED_SEARCH) return;
     const input = document.getElementById("airportInput");
     if (!input || input.dataset.navaidEntryProtectionBound === "true") return;
 
@@ -904,6 +905,7 @@
   }
 
   function boot() {
+    if (window.ZFW_UNIFIED_SEARCH) return;
     bindNavaidEntryProtection();
 
     let runs = 0;
