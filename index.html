@@ -134,6 +134,46 @@
       font-size: 1rem !important;
     }
 
+    .airport-search-shell {
+      width: 230px;
+      height: 48px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .airport-search-shell #airportInput {
+      width: 100% !important;
+      height: 30px !important;
+      min-height: 30px !important;
+      box-sizing: border-box;
+      border: 0 !important;
+      outline: 0 !important;
+      background: transparent !important;
+      padding: 4px 10px !important;
+    }
+
+    #airportEntryInstruction {
+      height: 15px;
+      line-height: 15px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.05px;
+      color: var(--cyan);
+      opacity: 0.88;
+      text-align: center;
+      white-space: nowrap;
+      pointer-events: none;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     .grid {
       gap: 8px !important;
       align-items: stretch !important;
@@ -897,8 +937,11 @@
 
     <main class="app">
       <section class="search-row">
-        <label for="airportInput">AIRPORT IDENTIFIER</label>
-        <input id="airportInput" type="text" autocomplete="off" autofocus maxlength="4" />
+        <label for="airportInput">AIRPORT / WAYPOINT / NAVAID</label>
+        <div id="airportSearchShell" class="airport-search-shell">
+          <input id="airportInput" type="text" autocomplete="off" autofocus maxlength="5" />
+          <div id="airportEntryInstruction">Enter 2–5 characters · Press ENTER to search</div>
+        </div>
         <div id="status" class="status">Ready</div>
       </section>
 
