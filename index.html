@@ -1857,28 +1857,22 @@
 
 
   <script>
-    // Unified FDCS search is ENTER-only. Block all legacy live-lookup events.
-    // Keydown is intentionally left alone so ENTER can reach the unified search handler.
-    document.addEventListener("input", function (event) {
-      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
+    // Unified FDCS search is ENTER-only.
+    // Intercept live-edit events at WINDOW capture level, before any legacy
+    // target/document listeners can perform an automatic airport/NAVAID lookup.
+    // Keydown is intentionally left alone so ENTER reaches the unified search.
+    (function () {
+      function blockLiveLookup(event) {
+        if (!window.ZFW_UNIFIED_SEARCH) return;
+        if (!event.target || event.target.id !== "airportInput") return;
+        if (event.type === "keydown" && event.key === "Enter") return;
         event.stopImmediatePropagation();
       }
-    }, true);
-    document.addEventListener("change", function (event) {
-      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
-        event.stopImmediatePropagation();
-      }
-    }, true);
-    document.addEventListener("keyup", function (event) {
-      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
-        event.stopImmediatePropagation();
-      }
-    }, true);
-    document.addEventListener("focusout", function (event) {
-      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
-        event.stopImmediatePropagation();
-      }
-    }, true);
+
+      ["beforeinput", "input", "change", "keyup", "blur", "focusout"].forEach(function (eventName) {
+        window.addEventListener(eventName, blockLiveLookup, true);
+      });
+    })();
   </script>
 
   <script>
