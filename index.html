@@ -1857,6 +1857,31 @@
 
 
   <script>
+    // Unified FDCS search is ENTER-only. Block all legacy live-lookup events.
+    // Keydown is intentionally left alone so ENTER can reach the unified search handler.
+    document.addEventListener("input", function (event) {
+      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    document.addEventListener("change", function (event) {
+      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    document.addEventListener("keyup", function (event) {
+      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    document.addEventListener("focusout", function (event) {
+      if (event.target && event.target.id === "airportInput" && window.ZFW_UNIFIED_SEARCH) {
+        event.stopImmediatePropagation();
+      }
+    }, true);
+  </script>
+
+  <script>
     const SESSION_KEY = "zfwAirportLocatorLoggedIn";
     const SESSION_ROLE_KEY = "zfwAirportLocatorRole";
 
