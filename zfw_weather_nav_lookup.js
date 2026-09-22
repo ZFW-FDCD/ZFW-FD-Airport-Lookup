@@ -471,6 +471,36 @@
     });
 
     hideMapForNav(record);
+
+    // A navaid/waypoint lookup must not retain a facility/clearance card
+    // that was rendered for the previous airport lookup.
+    const facilityCard = document.getElementById("facilityContactCard");
+    const facilityOutput = document.getElementById("facilityContact");
+    if(facilityOutput){
+      facilityOutput.textContent = "—";
+      facilityOutput.innerHTML = "—";
+      facilityOutput.title = "";
+    }
+    if(facilityCard){
+      facilityCard.style.display = "none";
+      facilityCard.classList.remove("facility-open","facility-closed");
+      facilityCard.style.borderColor = "";
+      facilityCard.style.boxShadow = "";
+    }
+
+    const omicFacilityCard = document.getElementById("omicFacilityContactCard");
+    const omicFacilityOutput = document.getElementById("omicFacilityContact");
+    if(omicFacilityOutput){
+      omicFacilityOutput.textContent = "—";
+      omicFacilityOutput.innerHTML = "—";
+      omicFacilityOutput.title = "";
+    }
+    if(omicFacilityCard){
+      omicFacilityCard.style.display = "none";
+      omicFacilityCard.classList.remove("facility-open","facility-closed");
+      omicFacilityCard.style.borderColor = "";
+      omicFacilityCard.style.boxShadow = "";
+    }
   }
 
 
