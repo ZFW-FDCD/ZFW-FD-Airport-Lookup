@@ -758,8 +758,9 @@
     parent.appendChild(group);
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
-    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
-    input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
+    // Unified search is ENTER-only. Never search while the user is typing.
+    // The primary airportInput handler in app.js owns the ENTER action.
+    input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();e.stopImmediatePropagation();} });
     installWaypointInstruction();
     setTimeout(installWaypointInstruction,250);
     setTimeout(installWaypointInstruction,1000);
