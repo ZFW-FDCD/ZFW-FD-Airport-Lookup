@@ -106,10 +106,6 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
 function scheduleClear(expectedIdent){if(clearTimer)clearTimeout(clearTimer);const expected=String(expectedIdent||"").trim().toUpperCase();clearTimer=setTimeout(()=>{const current=String(input.value||"").trim().toUpperCase();if(expected&&current!==expected)return;input.value="";input.focus()},1000)}
 let allowLookupOnEnter=false;
-window.ZFW_ENTER_SEARCH=function(){
-  allowLookupOnEnter=true;
-  updateResults();
-};
 
 function updateResults(){
   if(!allowLookupOnEnter)return;
@@ -319,13 +315,13 @@ input.addEventListener("input",e=>{
 },true);
 input.addEventListener("change",e=>{e.stopImmediatePropagation();},true);
 input.addEventListener("keyup",e=>{e.stopImmediatePropagation();},true);
-// ENTER is the sole lookup trigger. Handle it at window capture so legacy
-// keydown handlers cannot swallow the search before the input handler sees it.
-window.addEventListener("keydown",function(e){
-  if(e.key!=="Enter" || e.target!==input) return;
-  e.preventDefault();
-  e.stopImmediatePropagation();
-  window.ZFW_ENTER_SEARCH();
-  input.select();
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    allowLookupOnEnter=true;
+    updateResults();
+    input.select();
+  }
 },true);
 window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
