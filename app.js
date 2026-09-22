@@ -10,6 +10,13 @@ zfwMapImage.src = ZFW_MAP_IMAGE_SRC;
 zfwMapImage.onload = () => drawMap();
 let clearTimer=null,currentMarker=null;
 const input=document.getElementById("airportInput"),statusEl=document.getElementById("status");
+// Hard gate: this field never emits live-search events. ENTER is the only search trigger.
+if(input && input.dataset.enterOnlyGateInstalled !== "true"){
+  input.dataset.enterOnlyGateInstalled = "true";
+  ["beforeinput","input","change","keyup","blur","focusout"].forEach(function(eventName){
+    input.addEventListener(eventName,function(event){ event.stopImmediatePropagation(); },true);
+  });
+}
 const els={sector:document.getElementById("sector"),area:document.getElementById("area"),approach:document.getElementById("approach"),vscs:document.getElementById("vscs"),contact:document.getElementById("contact"),hours:document.getElementById("hours"),airportName:document.getElementById("airportName")};
 const cards={sector:document.getElementById("sectorCard"),area:document.getElementById("areaCard"),approach:document.getElementById("approachCard"),vscs:document.getElementById("vscsCard"),contact:document.getElementById("contactCard"),hours:document.getElementById("hoursCard"),airportName:document.getElementById("airportNameCard")};
 function normalizeSearch(v){const s=(v||"").trim().toUpperCase();return(s.length===3&&/^[A-Z]+$/.test(s))?"K"+s:s}
