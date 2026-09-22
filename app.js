@@ -99,6 +99,7 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
 function scheduleClear(expectedIdent){if(clearTimer)clearTimeout(clearTimer);const expected=String(expectedIdent||"").trim().toUpperCase();clearTimer=setTimeout(()=>{const current=String(input.value||"").trim().toUpperCase();if(expected&&current!==expected)return;input.value="";input.focus()},1000)}
 function updateResults(){
+  if(window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY){window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY();}
   if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
   const raw=input.value,upper=raw.toUpperCase();
   if(raw!==upper)input.value=upper;
