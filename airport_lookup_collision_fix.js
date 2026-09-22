@@ -156,9 +156,8 @@
     }, 100);
   }
 
+  // Unified search is ENTER-only. Do not install any legacy automatic lookup.
   repairAirportAliases();
-  installAutomaticLookupFallback();
-  keepAirportLookupAirportOnly();
 
   window.addEventListener("zfw-shared-corrections-updated", repairAirportAliases);
   window.addEventListener("zfw-facilities-updated", repairAirportAliases);
