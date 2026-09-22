@@ -867,7 +867,7 @@
   function isAirportRecord(record) {
     const type = recordType(record);
     if (type === "AIRPORT") return true;
-    if (["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type)) return false;
+    if (["NAVAID", "WAYPOINT", "FIX", "VOR", "DME", "VORTAC", "TACAN", "VOR/DME", "NDB"].includes(type)) return false;
 
     return Boolean(
       record &&
@@ -882,7 +882,7 @@
 
   function isNavRecord(record) {
     const type = recordType(record);
-    return ["NAVAID", "WAYPOINT", "FIX", "VOR", "VORTAC", "NDB"].includes(type);
+    return ["NAVAID", "WAYPOINT", "FIX", "VOR", "DME", "VORTAC", "TACAN", "VOR/DME", "NDB"].includes(type);
   }
 
   function findNavOnlyRecord(identifier) {
