@@ -432,6 +432,17 @@
       nameEl.classList.add("cyan-text");
     }
 
+    // A navaid/waypoint result must never retain facility details from a prior airport lookup.
+    ["approach","vscs","contact","hours"].forEach(function(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.textContent = "—";
+      el.innerHTML = "—";
+      el.title = "";
+      el.classList.remove("red-text","green-text","amber-text","cyan-text","omic-green-text","omic-red-text");
+      el.style.color = "";
+    });
+
     document.querySelectorAll(".card").forEach(card => {
       const isNearest = card.contains(document.getElementById("nearestWeather"));
       if(!isNearest){
