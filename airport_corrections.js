@@ -1356,7 +1356,18 @@
   function fillPirepForm(form, ident, record) {
     form.identifier.value = ident || "";
 
-    form.recordType.value = record.record_type || "WAYPOINT";
+    const selectedType = record.facility_type || record.record_type || "WAYPOINT";
+    if (!Array.from(form.recordType.options || []).some(function (option) {
+      return option.value === selectedType;
+    })) {
+      const legacyOption = document.createElement("option");
+      legacyOption.value = selectedType;
+      legacyOption.textContent = selectedType === "NAVAID" ? "Navaid (legacy)" : selectedType;
+      form.recordType.appendChild(legacyOption);
+    }
+
+    form.recordType.value = selectedType;
+    form.navName.value = record.airport_name || record.name || "";
     form.nearestWx.value = record.nearest_wx || "";
 
     if (form.notes) form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
@@ -1372,8 +1383,9 @@
       vscs: [],
       contacts: [],
       hours: [],
-      airport_name: ident,
+      airport_name: String(form.navName.value || "").trim(),
       record_type: form.recordType.value || "WAYPOINT",
+      facility_type: form.recordType.value || "WAYPOINT",
       nearest_wx: normalizeIdent(form.nearestWx.value)
     };
 
@@ -1472,17 +1484,28 @@
             </div>
 
             <div class="correction-field">
+              <label for="pirepNavName">Waypoint/Navaid Name</label>
+              <input id="pirepNavName" name="navName" type="text" maxlength="80" required />
+              <div class="correction-help">Enter the published name, such as Maverick, Guthrie, Bruns, or Glen Rose.</div>
+            </div>
+
+            <div class="correction-field">
               <label for="pirepRecordType">Type</label>
               <select id="pirepRecordType" name="recordType">
                 <option value="WAYPOINT">Waypoint</option>
-                <option value="NAVAID">Navaid</option>
+                <option value="VOR">VOR</option>
+                <option value="DME">DME</option>
+                <option value="VORTAC">VORTAC</option>
+                <option value="TACAN">TACAN</option>
+                <option value="VOR/DME">VOR/DME</option>
+                <option value="NDB">NDB</option>
               </select>
             </div>
 
-<div class="correction-field">
+            <div class="correction-field">
               <label for="pirepNearestWx">Nearest Weather Reporting Station</label>
-              <input id="pirepNearestWx" name="nearestWx" type="text" maxlength="4" required />
-              <div class="correction-help">Enter the valid reporting station identifier only, such as SHV, F00, SPS, GGG.</div>
+              <input id="pirepNearestWx" name="nearestWx" type="text" maxlength="4" />
+              <div class="correction-help">Optional. Enter the reporting station identifier when one is specifically associated with this waypoint/navaid.</div>
             </div>
           </div>
 
