@@ -198,7 +198,7 @@
   }
 
   function sourceNavData(){
-    return Object.assign({}, window.ZFW_NAV_DATA || {}, window.ZFW_SUPPLEMENTAL_NAVAIDS || {}, window.ZFW_SUPPLEMENTAL_WAYPOINTS || {});
+    return Object.assign({}, window.ZFW_SUPPLEMENTAL_NAVAIDS || {}, window.ZFW_SUPPLEMENTAL_WAYPOINTS || {}, window.ZFW_NAV_DATA || {});
   }
 
   function mergeNavData(){
