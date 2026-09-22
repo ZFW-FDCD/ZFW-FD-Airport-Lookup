@@ -586,7 +586,6 @@
   function wire(){
     injectHighlightStyle();
     mergeNavData();
-    if(window.ZFW_UNIFIED_SEARCH) return;
 
     const input = document.getElementById("airportInput");
     if(input) ["input","change","keyup","blur"].forEach(evt => input.addEventListener(evt, scheduleUpdate));
@@ -649,18 +648,7 @@
     }
 
     const nearest = calculateNearest(record);
-    if(!nearest){
-      output.textContent = "—";
-      output.title = "No nearest weather reporting station assigned.";
-      lastLookupIdent = typedIdent;
-      lastDisplayedWx = "";
-      lastDisplayedTitle = "";
-      lastFoundWasNav = false;
-      lastFoundRecord = record || null;
-      setNearestHighlight(false);
-      hideMapForNav(record);
-      return;
-    }
+    if(!nearest) return;
 
     writeNearest(output, nearest, typedIdent, record);
   }
@@ -699,7 +687,6 @@
   }
 
   function installWaypointLookupBox(){
-    if(window.ZFW_UNIFIED_SEARCH) return;
     if(document.getElementById("waypointInput")) return;
     const airport=document.getElementById("airportInput");
     if(!airport || !airport.parentElement) return;
@@ -712,7 +699,7 @@
     if(airportLabel){ const ls=getComputedStyle(airportLabel); label.style.font=ls.font; label.style.fontWeight=ls.fontWeight; label.style.fontSize=ls.fontSize; label.style.color=ls.color; label.style.letterSpacing=ls.letterSpacing; }
 
     const shell=document.createElement("div");
-    shell.style.width="230px";
+    shell.style.width="190px";
     shell.style.height="48px";
     shell.style.boxSizing="border-box";
     shell.style.display="flex";
@@ -758,15 +745,13 @@
     parent.appendChild(group);
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
-    // Unified search is ENTER-only. Never search while the user is typing.
-    // The primary airportInput handler in app.js owns the ENTER action.
-    input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();e.stopImmediatePropagation();} });
+    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
+    input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
     installWaypointInstruction();
     setTimeout(installWaypointInstruction,250);
     setTimeout(installWaypointInstruction,1000);
   }
 
-  window.ZFW_UNIFIED_SEARCH = true;
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
   window.ZFW_MERGE_NAV_DATA = mergeNavData;
   window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
@@ -789,7 +774,10 @@
 
   function isCompleteLookupIdent(value) {
     const ident = normalizeIdent(value);
-    return /^[A-Z0-9]{2,5}$/.test(ident);
+    return /^[A-Z0-9]{3}$/.test(ident) ||
+      /^K[A-Z0-9]{3}$/.test(ident) ||
+      /^[A-Z0-9]{4}$/.test(ident) ||
+      /^[A-Z0-9]{5}$/.test(ident);
   }
 
   function airportRecords() {
@@ -895,7 +883,6 @@
   }
 
   function bindNavaidEntryProtection() {
-    if (window.ZFW_UNIFIED_SEARCH) return;
     const input = document.getElementById("airportInput");
     if (!input || input.dataset.navaidEntryProtectionBound === "true") return;
 
@@ -906,7 +893,6 @@
   }
 
   function boot() {
-    if (window.ZFW_UNIFIED_SEARCH) return;
     bindNavaidEntryProtection();
 
     let runs = 0;
