@@ -1869,7 +1869,14 @@ const ZFW_APP_SCRIPTS = [
       function blockLiveLookup(event) {
         if (!window.ZFW_UNIFIED_SEARCH) return;
         if (!event.target || event.target.id !== "airportInput") return;
-        if (event.type === "keydown" && event.key === "Enter") return;
+        if (event.type === "keydown" && event.key === "Enter") {
+          if (typeof window.ZFW_ENTER_SEARCH === "function") {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            window.ZFW_ENTER_SEARCH();
+          }
+          return;
+        }
         event.stopImmediatePropagation();
       }
 
