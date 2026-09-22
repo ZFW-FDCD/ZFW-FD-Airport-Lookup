@@ -296,4 +296,11 @@ function drawMap() {
   }
 }
 
-input.addEventListener("input",updateResults);input.addEventListener("keydown",e=>{if(e.key==="Enter"){updateResults();input.select();e.preventDefault()}});window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
+// Explicit ENTER-only search trigger. Typing never invokes updateResults().
+input.addEventListener("keydown",function(e){
+  if(e.key !== "Enter") return;
+  e.preventDefault();
+  e.stopPropagation();
+  updateResults();
+  input.select();
+});window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
