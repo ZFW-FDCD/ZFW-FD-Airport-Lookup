@@ -653,6 +653,20 @@
     writeNearest(output, nearest, typedIdent, record);
   }
 
+  function clearPreviousLookupDisplay(){
+    const output = document.getElementById("nearestWeather");
+    if(output){
+      output.textContent = "—";
+      output.title = "";
+    }
+    lastLookupIdent = "";
+    lastDisplayedWx = "";
+    lastDisplayedTitle = "";
+    lastFoundWasNav = false;
+    lastFoundRecord = null;
+    setNearestHighlight(false);
+  }
+
   function lookupWaypoint(identifier){
     const typedIdent = normalizeIdent(identifier || "");
     if(!typedIdent || !isCompleteLookupIdent(typedIdent)) return false;
@@ -666,6 +680,7 @@
     }
     if(!record || !isNavType(record)) return false;
 
+    clearPreviousLookupDisplay();
     forceStatus(typedIdent + " found");
     clearAirportOutputsForNav(record);
     hideMapForNav(record);
@@ -752,6 +767,7 @@
     setTimeout(installWaypointInstruction,1000);
   }
 
+  window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY = clearPreviousLookupDisplay;
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
   window.ZFW_MERGE_NAV_DATA = mergeNavData;
   window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
