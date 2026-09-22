@@ -1367,7 +1367,13 @@
     }
 
     form.recordType.value = selectedType;
-    form.navName.value = record.airport_name || record.name || "";
+
+    const rawNavName = String(record.airport_name || record.name || "").trim();
+    const cleanNavName = rawNavName
+      .replace(/\s+(VORTAC|VOR\/DME|VOR|DME|TACAN(?:\s+ONLY)?|TACR|VTAC|NDB)$/i, "")
+      .trim();
+
+    form.navName.value = cleanNavName;
     form.nearestWx.value = record.nearest_wx || "";
 
     if (form.notes) form.notes.value = Array.isArray(record.contacts) ? record.contacts.join(", ") : "";
@@ -1383,7 +1389,10 @@
       vscs: [],
       contacts: [],
       hours: [],
-      airport_name: String(form.navName.value || "").trim(),
+      airport_name: String(form.navName.value || "")
+        .trim()
+        .replace(/\s+(VORTAC|VOR\/DME|VOR|DME|TACAN(?:\s+ONLY)?|TACR|VTAC|NDB)$/i, "")
+        .trim(),
       record_type: form.recordType.value || "WAYPOINT",
       facility_type: form.recordType.value || "WAYPOINT",
       nearest_wx: normalizeIdent(form.nearestWx.value)
