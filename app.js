@@ -10,17 +10,10 @@ zfwMapImage.src = ZFW_MAP_IMAGE_SRC;
 zfwMapImage.onload = () => drawMap();
 let clearTimer=null,currentMarker=null;
 const input=document.getElementById("airportInput"),statusEl=document.getElementById("status");
-// Hard gate: this field never emits live-search events. ENTER is the only search trigger.
-if(input && input.dataset.enterOnlyGateInstalled !== "true"){
-  input.dataset.enterOnlyGateInstalled = "true";
-  ["beforeinput","input","change","keyup","blur","focusout"].forEach(function(eventName){
-    input.addEventListener(eventName,function(event){ event.stopImmediatePropagation(); },true);
-  });
-}
 const els={sector:document.getElementById("sector"),area:document.getElementById("area"),approach:document.getElementById("approach"),vscs:document.getElementById("vscs"),contact:document.getElementById("contact"),hours:document.getElementById("hours"),airportName:document.getElementById("airportName")};
 const cards={sector:document.getElementById("sectorCard"),area:document.getElementById("areaCard"),approach:document.getElementById("approachCard"),vscs:document.getElementById("vscsCard"),contact:document.getElementById("contactCard"),hours:document.getElementById("hoursCard"),airportName:document.getElementById("airportNameCard")};
 function normalizeSearch(v){const s=(v||"").trim().toUpperCase();return(s.length===3&&/^[A-Z]+$/.test(s))?"K"+s:s}
-function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{2,5}$/.test(s)}
+function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{3}$/.test(s)||/^K[A-Z0-9]{3}$/.test(s)||/^[A-Z0-9]{4}$/.test(s)}
 function splitLines(items){return(!items||!items.length)?"":items.filter(Boolean).join("\n")}
 function formatSectorNameFirstToNumberFirst(value){const text=String(value||"").trim();const match=text.match(/^([A-Z]{2,4})\s+(\d{2})$/);return match?`${match[2]} ${match[1]}`:text}
 function splitSectorLines(items){return(!items||!items.length)?"":items.filter(Boolean).map(formatSectorNameFirstToNumberFirst).join("\n")}
@@ -105,38 +98,32 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
 function scheduleClear(expectedIdent){if(clearTimer)clearTimeout(clearTimer);const expected=String(expectedIdent||"").trim().toUpperCase();clearTimer=setTimeout(()=>{const current=String(input.value||"").trim().toUpperCase();if(expected&&current!==expected)return;input.value="";input.focus()},1000)}
-let allowLookupOnEnter=false;
-
 function updateResults(){
-  if(!allowLookupOnEnter)return;
-  allowLookupOnEnter=false;
   if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
   const raw=input.value,upper=raw.toUpperCase();
   if(raw!==upper)input.value=upper;
 
   const typed=upper.trim();
-  if(!typed)return;
 
-  // Unified search accepts 2–5 characters, but only exact airport formats
-  // (3/4 characters) are treated as airports. Five-character entries are
-  // therefore available to waypoint/fix lookup only.
-  if(!isCompleteLookupInput(typed)){
-    statusEl.textContent=typed.length<2?"Ready":"Invalid identifier";
-    statusEl.style.color=typed.length<2?"":"var(--red)";
+  // Do not accept or process one- or two-character entries.
+  if(!typed)return;
+  if(typed.length<3){
+    statusEl.textContent="Ready";
+    statusEl.style.color="";
     return;
   }
 
-  const airportQuery=normalizeSearch(upper);
-  const airportEligible=typed.length===3||typed.length===4;
-  const rec=airportEligible?records[airportQuery]:null;
+  if(!isCompleteLookupInput(typed)){
+    return;
+  }
+
+  const query=normalizeSearch(upper);
+  if(!query)return;
+
+  const rec=records[query];
 
   if(!rec){
-    if(airportEligible && window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
-      scheduleClear(typed);
-      return;
-    }
-
-    if(window.ZFW_LOOKUP_WAYPOINT && window.ZFW_LOOKUP_WAYPOINT(typed)){
+    if(window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
       scheduleClear(typed);
       return;
     }
@@ -164,7 +151,7 @@ function updateResults(){
   const appIsOpen=appDetails.appIsOpen;
 
   let sectorValue=splitSectorLines(sectors);
-  if(appIsOpen&&sectorValue)sectorValue+="\\nAPP OPEN";
+  if(appIsOpen&&sectorValue)sectorValue+="\nAPP OPEN";
 
   let approachValue="";
   let vscsValue="";
@@ -186,6 +173,8 @@ function updateResults(){
 
   els.airportName.classList.add("cyan-text");
 
+  // AREA color association intentionally removed to reduce visual clutter.
+
   if(apps.length&&appIsOpen){
     highlightFdcsCard("approach","green");
     statusEl.textContent=`${upper} found`;
@@ -202,12 +191,11 @@ function updateResults(){
     }
   }
 
-  currentMarker={ident:airportQuery,lat:rec.lat,lon:rec.lon};
+  currentMarker={ident:query,lat:rec.lat,lon:rec.lon};
   drawMap();
   if(window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT){window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT(typed)}
   scheduleClear(typed)
 }
-
 function pointInPolygon(point, polygon) {
   const [x, y] = point;
   let inside = false;
@@ -308,20 +296,4 @@ function drawMap() {
   }
 }
 
-input.addEventListener("input",e=>{
-  const value=input.value.toUpperCase();
-  if(input.value!==value)input.value=value;
-  e.stopImmediatePropagation();
-},true);
-input.addEventListener("change",e=>{e.stopImmediatePropagation();},true);
-input.addEventListener("keyup",e=>{e.stopImmediatePropagation();},true);
-input.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    allowLookupOnEnter=true;
-    updateResults();
-    input.select();
-  }
-},true);
-window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
+input.addEventListener("input",updateResults);input.addEventListener("keydown",e=>{if(e.key==="Enter"){updateResults();input.select();e.preventDefault()}});window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
