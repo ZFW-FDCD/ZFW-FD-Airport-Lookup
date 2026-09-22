@@ -315,13 +315,14 @@ input.addEventListener("input",e=>{
 },true);
 input.addEventListener("change",e=>{e.stopImmediatePropagation();},true);
 input.addEventListener("keyup",e=>{e.stopImmediatePropagation();},true);
-input.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    allowLookupOnEnter=true;
-    updateResults();
-    input.select();
-  }
+// ENTER is the sole lookup trigger. Handle it at window capture so legacy
+// keydown handlers cannot swallow the search before the input handler sees it.
+window.addEventListener("keydown",function(e){
+  if(e.key!=="Enter" || e.target!==input) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  allowLookupOnEnter=true;
+  updateResults();
+  input.select();
 },true);
 window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
