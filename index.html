@@ -969,7 +969,11 @@
 
 
   <script>
-    const ZFW_APP_SCRIPTS = [
+    <!-- Unified search is intentionally ENTER-only. Set this before any app scripts load. -->
+<script>
+  window.ZFW_UNIFIED_SEARCH = true;
+</script>
+const ZFW_APP_SCRIPTS = [
       "airport_data.js",
       "zfw_nav_data.js",
       "zfw_supplemental_navaids.js",
