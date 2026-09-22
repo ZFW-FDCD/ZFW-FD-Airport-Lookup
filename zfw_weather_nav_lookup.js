@@ -22,7 +22,7 @@
 
   function isNavType(record){
     const type = String(record?.record_type || record?.type || "").toUpperCase();
-    return ["NAVAID","WAYPOINT","FIX","VOR","VORTAC","NDB"].includes(type);
+    return ["NAVAID","WAYPOINT","FIX","VOR","DME","VORTAC","TACAN","VOR/DME","NDB"].includes(type);
   }
 
   function isAirportRecord(record){
@@ -189,6 +189,7 @@
     rec.contacts = Array.isArray(rec.contacts) ? rec.contacts : [];
     rec.hours = Array.isArray(rec.hours) ? rec.hours : [];
     rec.airport_name = rec.airport_name || rec.name || (ident + " NAVAID");
+    rec.facility_type = rec.facility_type || rec.record_type || "";
     if(rec.lat !== undefined) rec.lat = Number(rec.lat);
     if(rec.lon !== undefined) rec.lon = Number(rec.lon);
     if(rec.nearest_wx) rec.nearest_wx = normalizeIdent(rec.nearest_wx);
@@ -427,7 +428,7 @@
 
     const nameEl = document.getElementById("airportName");
     if(nameEl){
-      nameEl.textContent = record.airport_name || record.name || lastLookupIdent || "Navaid/Waypoint";
+      nameEl.textContent = navDisplayName(record, lastLookupIdent || "NAVAID");
       nameEl.classList.remove("red-text", "green-text", "amber-text");
       nameEl.classList.add("cyan-text");
     }
@@ -692,6 +693,15 @@
     if(!nearest) return;
 
     writeNearest(output, nearest, typedIdent, record);
+  }
+
+  function navDisplayName(record, ident){
+    const name = String(record && (record.airport_name || record.name) || ident || "NAVAID").trim();
+    const type = String(record && (record.facility_type || record.record_type) || "").trim().toUpperCase();
+
+    if(!type || type === "NAVAID" || type === "FIX") return name;
+    if(name.toUpperCase().endsWith(" " + type)) return name;
+    return name + " " + type;
   }
 
   function clearPreviousLookupDisplay(){
