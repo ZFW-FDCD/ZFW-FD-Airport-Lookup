@@ -216,12 +216,9 @@
         const existing = records[ident];
         const existingIsAirport = isAirportRecord(existing);
 
-        const existingName = existing.airport_name || existing.name || ident;
-        const navName = nav.airport_name || nav.name || ident;
-        if(navName && existingName && existingName !== navName && !existingName.includes(navName)){
-          existing.airport_name = existingName + " / " + navName;
-        }
-
+        // For navaid/waypoint corrections, preserve the stored name and facility type.
+        // Do not append the raw NASR/source name here; doing so can reintroduce stale
+        // names such as an old VORTAC label after the user amends the facility.
         if(existingIsAirport){
           existing.record_type = "AIRPORT";
           if(nav.nearest_wx && !existing.nearest_wx) existing.nearest_wx = nav.nearest_wx;
