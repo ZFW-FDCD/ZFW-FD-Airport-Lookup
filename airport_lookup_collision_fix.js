@@ -82,6 +82,11 @@
       const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
       const base = typed.length === 4 && typed.charAt(0) === "K" ? typed.slice(1) : typed;
       if (/^[A-Z0-9]{3}$/.test(base)) {
+        // A digit-leading 3-character entry may be the prefix of a 4-character
+        // private-use airport identifier (for example 0TX1). Do not declare it
+        // "not found" until we know it is actually a 3-character airport.
+        if (/^[0-9]/.test(base) && !isAirportRecord(records[base]) && !isAirportRecord(records["K" + base])) return;
+
         const airport = records["K" + base] || records[base];
         const navSources = Object.assign({}, window.ZFW_NAV_DATA || {}, window.ZFW_SUPPLEMENTAL_NAVAIDS || {}, window.ZFW_SUPPLEMENTAL_WAYPOINTS || {});
         const navOnly = !isAirportRecord(airport) && (isNavRecord(records[base]) || !!navSources[base]);
@@ -100,9 +105,17 @@
 
   function validCompleteIdentifier(value) {
     const typed = normalizeIdent(value);
-    return /^[A-Z0-9]{3,5}$/.test(typed) && (
-      typed.length === 3 || /^K[A-Z0-9]{3}$/.test(typed) || typed.length === 4 || typed.length === 5
-    );
+    if (!/^[A-Z0-9]{3,5}$/.test(typed)) return false;
+
+    // Keep ordinary 3-character airport lookup intact. For a digit-leading
+    // 3-character prefix, only auto-lookup if that exact 3-character airport
+    // exists; otherwise wait for a possible 4-character airport identifier.
+    if (typed.length === 3 && /^[0-9]/.test(typed)) {
+      const records = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+      return isAirportRecord(records[typed]) || isAirportRecord(records["K" + typed]);
+    }
+
+    return typed.length === 3 || /^K[A-Z0-9]{3}$/.test(typed) || typed.length === 4 || typed.length === 5;
   }
 
   function forceLookup(input, typed) {
