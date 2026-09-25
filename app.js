@@ -123,6 +123,17 @@ function updateResults(){
 
   const rec=records[query];
 
+  // A 4-character K-prefixed entry (for example KIAB) is the ICAO form
+  // of a 3-character Non-ZFW airport identifier (IAB). Give the adjacent
+  // ARTCC lookup the first chance to resolve it when no local ZFW airport
+  // record exists.
+  if(!rec && /^K[A-Z0-9]{3}$/.test(query) && window.applyAdjacentAirportLookup){
+    if(window.applyAdjacentAirportLookup(query)){
+      scheduleClear(typed);
+      return;
+    }
+  }
+
   if(!rec){
     if(window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
       scheduleClear(typed);
