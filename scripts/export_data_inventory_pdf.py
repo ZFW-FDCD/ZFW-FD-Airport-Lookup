@@ -39,7 +39,7 @@ def join(v):
 story=[
     Paragraph("ZFW FD Airport / Navaid / Waypoint Programmed Data Inventory",title),
     Paragraph("Generated directly from the current repository data files on the export branch. This document inventories the identifiers and operational records programmed into the lookup application; it does not alter the live application.",sub),
-    Paragraph(f"Airport data records: {len(airport['records']):,} &nbsp;&nbsp; NASR NAV/FIX records: {len(nav['records']):,} &nbsp;&nbsp; Supplemental navaids: {len(supp_nav):,} &nbsp;&nbsp; Supplemental waypoints/fixes: {len(supp_wp):,} &nbsp;&nbsp; Adjacent ARTCC entries: {len(adj['airports']):,}",sub),
+    Paragraph(f"Airport data records: {len(airport['records']):,} &nbsp;&nbsp; NASR NAV/FIX records: {len(nav['records'] if 'records' in nav else nav):,} &nbsp;&nbsp; Supplemental navaids: {len(supp_nav):,} &nbsp;&nbsp; Supplemental waypoints/fixes: {len(supp_wp):,} &nbsp;&nbsp; Adjacent ARTCC entries: {len(adj['airports']):,}",sub),
     Paragraph("Identifier policy note",h1),
     Paragraph("This inventory prints the identifiers as they are stored in the source data. It does not create additional ICAO K-prefix identifiers for the purpose of this report.",sub),
 ]
