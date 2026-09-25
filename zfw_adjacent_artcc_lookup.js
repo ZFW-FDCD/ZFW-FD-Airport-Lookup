@@ -33,11 +33,16 @@
   }
 
   function isValidAirportIdent(value){
-    return /^[A-Z0-9]{3}$/.test(canonicalAirportIdent(value));
+    const ident = canonicalAirportIdent(value);
+    return /^[A-Z0-9]{3}$/.test(ident) || /^[A-Z0-9]{4}$/.test(ident);
   }
 
   function aliasesFor(value){
     const ident = canonicalAirportIdent(value);
+
+    // Four-character airport identifiers are standalone identifiers.
+    // Only 3-character identifiers get the traditional K-prefixed alias.
+    if(/^[A-Z0-9]{4}$/.test(ident)) return [ident];
     if(!/^[A-Z0-9]{3}$/.test(ident)) return [];
     return [ident, "K" + ident];
   }
@@ -81,7 +86,9 @@
     removeLocalZfwAirportShadow(ident);
 
     store.airports[ident] = record;
-    store.airports["K" + ident] = record;
+    if(/^[A-Z0-9]{3}$/.test(ident)){
+      store.airports["K" + ident] = record;
+    }
 
     return { ident, record };
   }
@@ -205,7 +212,9 @@
     const all = loadLocalRecords();
     const clean = canonicalAirportIdent(ident);
     all[clean] = record;
-    all["K" + clean] = record;
+    if(/^[A-Z0-9]{3}$/.test(clean)){
+      all["K" + clean] = record;
+    }
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(all));
   }
 
@@ -426,7 +435,7 @@
       const message = document.getElementById("nonZfwMessage");
 
       if(!isValidAirportIdent(identifier)){
-        message.textContent = "Enter a valid 3-character airport identifier, with or without K.";
+        message.textContent = "Enter a valid 3- or 4-character airport identifier, with or without K for 3-character identifiers.";
         message.className = "correction-message error";
         return;
       }
