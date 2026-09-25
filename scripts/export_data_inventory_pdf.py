@@ -71,7 +71,7 @@ for ident,rec in sorted(airport["records"].items()):
 add_table("1. Airport data records",airport_rows,[.65*inch,2.55*inch,.75*inch,.7*inch,3.15*inch])
 
 nav_rows=[]
-for ident,rec in sorted(nav["records"].items()):
+for ident,rec in sorted((nav["records"] if "records" in nav else nav).items()):
     nav_rows.append((ident,rec.get("airport_name",""),rec.get("record_type",""),rec.get("nearest_wx",""),rec.get("source","")))
 add_table("2. NASR NAV/FIX data records",nav_rows,[.65*inch,2.45*inch,.8*inch,.7*inch,3.2*inch])
 
