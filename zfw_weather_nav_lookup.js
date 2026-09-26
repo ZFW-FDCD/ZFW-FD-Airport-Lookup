@@ -736,8 +736,6 @@
   }
 
   function installWaypointLookupBox(){
-    return;
-    return;
     if(document.getElementById("waypointInput")) return;
     const airport=document.getElementById("airportInput");
     if(!airport || !airport.parentElement) return;
@@ -796,7 +794,7 @@
     parent.appendChild(group);
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
-    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
+    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=2) run(); });
     input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
     installWaypointInstruction();
     setTimeout(installWaypointInstruction,250);
