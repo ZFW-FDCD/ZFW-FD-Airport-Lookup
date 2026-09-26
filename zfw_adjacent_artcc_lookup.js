@@ -11,7 +11,7 @@
   };
 
   const BUILT_IN_ADJACENT_RECORDS = {
-    IAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
+    IAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT", nearest_wx: "ICT" },
     KIAB: { center: "ZKC", name: "MCCONNELL AIR FORCE BASE", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
     ICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
     KICT: { center: "ZKC", name: "WICHITA DWIGHT D EISENHOWER NATIONAL", fdcd: "913-254-8508", record_type: "NON_ZFW_AIRPORT" },
