@@ -737,6 +737,7 @@
 
   function installWaypointLookupBox(){
     return;
+    return;
     if(document.getElementById("waypointInput")) return;
     const airport=document.getElementById("airportInput");
     if(!airport || !airport.parentElement) return;
@@ -969,6 +970,7 @@
   }
 
   function boot() {
+    return;
     bindNavaidEntryProtection();
 
     let runs = 0;
