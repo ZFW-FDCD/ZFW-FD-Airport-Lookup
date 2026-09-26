@@ -145,7 +145,7 @@ function renderCombinedNavaidDisplay(navRecords){
       "</div>";
   }).join("");
 
-  card.innerHTML="<div class=\"card-title\">ASSOCIATED FACILITY</div>"+rows;
+  card.innerHTML="<div class=\"card-title\">ASSOCIATED NAVAID</div>"+rows;
 }
 function clearCombinedNavaidDisplay(){
   const card=document.getElementById("combinedNavaidCard");
