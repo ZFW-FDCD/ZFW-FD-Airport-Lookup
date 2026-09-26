@@ -899,6 +899,11 @@
       <section class="search-row">
         <label for="airportInput">AIRPORT IDENTIFIER</label>
         <input id="airportInput" type="text" autocomplete="off" autofocus maxlength="5" />
+        <div id="waypointLookupGroup" style="display:flex;align-items:center;gap:8px;flex:0 0 auto;">
+          <label for="waypointInput" style="margin:0;white-space:nowrap;">WAYPOINT / NAVAID</label>
+          <input id="waypointInput" type="text" autocomplete="off" maxlength="5" spellcheck="false"
+                 style="width:190px;height:48px;box-sizing:border-box;padding:4px 10px;" />
+        </div>
         <div id="status" class="status">Ready</div>
       </section>
 
