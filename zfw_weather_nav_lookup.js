@@ -817,6 +817,7 @@
 
   window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY = clearPreviousLookupDisplay;
   window.ZFW_UPDATE_NEAREST_WX = updateNearestWeather;
+  window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT = updateNearestWeatherForIdent;
   window.ZFW_MERGE_NAV_DATA = mergeNavData;
   window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
   installWaypointLookupBox();
