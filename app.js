@@ -181,6 +181,15 @@ function updateResults(){
     ? window.ZFW_GET_NAV_RECORDS_FOR_IDENT(query)
     : [];
 
+  // A NAVAID/waypoint-only record must stay a NAVAID/waypoint result.
+  // Do not render an airport card or an associated-NAVAID card for it.
+  const recType = String(rec && (rec.record_type || rec.type || "") || "").toUpperCase();
+  const recIsNavOnly = ["NAVAID","WAYPOINT","FIX","VOR","DME","VORTAC","TACAN","VOR/DME","NDB"].includes(recType);
+  if(recIsNavOnly && window.ZFW_LOOKUP_WAYPOINT && window.ZFW_LOOKUP_WAYPOINT(query)){
+    scheduleClear(typed);
+    return;
+  }
+
   // An identifier can legitimately represent both an airport and a navaid.
   // Keep both records and render them together instead of forcing one to win.
   if(!rec && (!navRecords || !navRecords.length)){
