@@ -113,8 +113,21 @@ function renderCombinedNavaidDisplay(navRecords){
   }
 
   const rows=navRecords.map(function(rec){
-    const name=String(rec.airport_name||rec.name||"NAVAID").trim();
-    const type=String(rec.facility_type||rec.record_type||rec.type||"NAVAID").trim();
+    let name=String(rec.airport_name||rec.name||"").trim();
+    let type=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
+
+    // Keep the displayed name clean. Facility type belongs in the Type field.
+    const suffixMatch=name.toUpperCase().match(/\\s+(VOR\\s*[-/]\\s*DME|VORTAC|TACAN|VOR|DME|NDB|WAYPOINT|FIX|NAVAID)\\s*$/);
+    if(suffixMatch){
+      const rawSuffix=suffixMatch[1].replace(/\\s+/g,"");
+      const inferredType=rawSuffix==="VORDME"?"VOR/DME":rawSuffix;
+      name=name.slice(0,suffixMatch.index).trim();
+      if(!type||type==="NAVAID"||type==="FIX"||type==="WAYPOINT") type=inferredType;
+    }
+
+    if(type==="VOR-DME"||type==="VORDME") type="VOR/DME";
+    if(!type) type="NAVAID";
+
     const ident=String(rec.ident||rec.identifier||"").trim();
     const freq=String(rec.frequency||rec.freq||"").trim();
     const channel=String(rec.channel||rec.tacan_channel||"").trim();
@@ -132,7 +145,7 @@ function renderCombinedNavaidDisplay(navRecords){
       "</div>";
   }).join("");
 
-  card.innerHTML="<div class=\"card-title\">ASSOCIATED NAVAID / WAYPOINT</div>"+rows;
+  card.innerHTML="<div class=\"card-title\">ASSOCIATED FACILITY</div>"+rows;
 }
 function clearCombinedNavaidDisplay(){
   const card=document.getElementById("combinedNavaidCard");
