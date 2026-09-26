@@ -679,12 +679,23 @@
   }
 
   function navDisplayName(record, ident){
-    const name = String(record && (record.airport_name || record.name) || ident || "NAVAID").trim();
-    const type = String(record && (record.facility_type || record.record_type) || "").trim().toUpperCase();
+    let name = String(record && (record.airport_name || record.name) || ident || "NAVAID").trim();
+    let type = String(record && (record.facility_type || record.record_type) || "").trim().toUpperCase();
 
-    if(!type || type === "NAVAID" || type === "FIX") return name;
-    if(name.toUpperCase().endsWith(" " + type)) return name;
-    return name + " " + type;
+    // Display names contain only the facility/location name. The facility type
+    // belongs in the Type field, never appended to the name.
+    const knownTypes = ["VOR/DME","VORTAC","TACAN","VOR","DME","NDB","WAYPOINT","FIX","NAVAID"];
+    const suffixMatch = name.toUpperCase().match(/\\s+(VOR\\s*[-/]\\s*DME|VORTAC|TACAN|VOR|DME|NDB|WAYPOINT|FIX|NAVAID)\\s*$/);
+    if(suffixMatch){
+      const rawSuffix = suffixMatch[1].replace(/\\s+/g, "");
+      const inferredType = rawSuffix === "VORDME" ? "VOR/DME" : rawSuffix;
+      name = name.slice(0, suffixMatch.index).trim();
+      if(!type || type === "NAVAID" || type === "FIX" || type === "WAYPOINT") type = inferredType;
+    }
+
+    if(type === "VOR-DME" || type === "VORDME") type = "VOR/DME";
+    if(!knownTypes.includes(type)) type = type || "NAVAID";
+    return name || ident || "NAVAID";
   }
 
   function clearPreviousLookupDisplay(){
