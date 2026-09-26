@@ -191,11 +191,19 @@ function updateResults(){
   }
 
   // An identifier can legitimately represent both an airport and a navaid.
-  // Keep both records and render them together instead of forcing one to win.
-  if(!rec && (!navRecords || !navRecords.length)){
+  // If it is a known adjacent/non-ZFW airport, that airport result takes
+  // precedence over a colliding navaid/waypoint record.
+  if(!rec){
     if(window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
       scheduleClear(typed);
       return;
+    }
+
+    if(navRecords && navRecords.length){
+      if(window.ZFW_LOOKUP_WAYPOINT && window.ZFW_LOOKUP_WAYPOINT(query)){
+        scheduleClear(typed);
+        return;
+      }
     }
 
     statusEl.textContent=`${upper} not found`;
@@ -208,13 +216,6 @@ function updateResults(){
 
     scheduleClear(typed);
     return;
-  }
-
-  if(!rec && navRecords && navRecords.length){
-    if(window.ZFW_LOOKUP_WAYPOINT && window.ZFW_LOOKUP_WAYPOINT(query)){
-      scheduleClear(typed);
-      return;
-    }
   }
 
   if(window.clearAdjacentAirportDisplayState){
