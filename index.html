@@ -113,6 +113,51 @@
   </style>
 
   <style>
+    /* Two-box airport / waypoint lookup layout */
+    .app .search-row {
+      display: flex !important;
+      align-items: center !important;
+      flex-wrap: nowrap !important;
+      gap: 10px !important;
+    }
+    .app .search-row #waypointLookupGroup {
+      order: 2 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
+    }
+    .app .search-row #waypointInput {
+      width: 190px !important;
+      min-width: 190px !important;
+      max-width: 190px !important;
+      height: 44px !important;
+      min-height: 44px !important;
+      box-sizing: border-box !important;
+      padding: 6px 10px !important;
+      background: #101820 !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      outline: none !important;
+      font-size: clamp(22px, 3vw, 30px) !important;
+      font-weight: 800 !important;
+      text-align: center !important;
+      letter-spacing: 1px !important;
+      caret-color: var(--cyan) !important;
+    }
+    .app .search-row #status {
+      order: 3 !important;
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
+    }
+    .app .search-row #airportInput {
+      order: 1 !important;
+    }
+  </style>
+
+  <style>
     /* Compact operational layout so the map remains visible with less scrolling. */
     .app {
       padding-top: 12px !important;
