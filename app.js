@@ -126,7 +126,7 @@ function renderCombinedNavaidDisplay(navRecords){
     }
 
     if(type==="VOR-DME"||type==="VORDME") type="VOR/DME";
-    if(!type) type="NAVAID";
+    // Do not display the generic NAVAID label as a facility type.\n    if(type==="NAVAID") type="";
 
     const ident=String(rec.ident||rec.identifier||"").trim();
     const freq=String(rec.frequency||rec.freq||"").trim();
