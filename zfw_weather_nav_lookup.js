@@ -11,7 +11,7 @@
 
   function isCompleteLookupIdent(ident){
     ident = normalizeIdent(ident);
-    return /^[A-Z0-9]{2,5}$/.test(ident);
+    return /^[A-Z0-9]{3,5}$/.test(ident);
   }
 
   function ensureAirportData(){
@@ -773,7 +773,7 @@
 
     const note=document.createElement("div");
     note.id="waypointEntryInstruction";
-    note.textContent="Enter 2–5 characters · Press ENTER to search";
+    note.textContent="Enter 3–5 characters · Press ENTER to search";
     note.style.height="15px";
     note.style.lineHeight="15px";
     note.style.fontSize="0.64rem";
@@ -794,7 +794,7 @@
     parent.appendChild(group);
 
     function run(){ const id=normalizeIdent(input.value); if(!id)return; input.value=""; if(!lookupWaypoint(id)){ input.value=id; const st=document.getElementById("status"); if(st){st.textContent=id+" not found";st.style.color="var(--red)";} } }
-    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=2) run(); });
+    input.addEventListener("input",()=>{ if(normalizeIdent(input.value).length>=3) run(); });
     input.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();run();} });
     installWaypointInstruction();
     setTimeout(installWaypointInstruction,250);
