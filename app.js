@@ -12,8 +12,8 @@ let clearTimer=null,currentMarker=null;
 const input=document.getElementById("airportInput"),statusEl=document.getElementById("status");
 const els={sector:document.getElementById("sector"),area:document.getElementById("area"),approach:document.getElementById("approach"),vscs:document.getElementById("vscs"),contact:document.getElementById("contact"),hours:document.getElementById("hours"),airportName:document.getElementById("airportName")};
 const cards={sector:document.getElementById("sectorCard"),area:document.getElementById("areaCard"),approach:document.getElementById("approachCard"),vscs:document.getElementById("vscsCard"),contact:document.getElementById("contactCard"),hours:document.getElementById("hoursCard"),airportName:document.getElementById("airportNameCard")};
-function normalizeSearch(v){const s=(v||"").trim().toUpperCase();return(s.length===3&&/^[A-Z]+$/.test(s))?"K"+s:s}
-function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{3}$/.test(s)||/^K[A-Z0-9]{3}$/.test(s)||/^[A-Z0-9]{4}$/.test(s)}
+function normalizeSearch(v){return String(v||"").trim().toUpperCase()}
+function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{2,5}$/.test(s)}
 function splitLines(items){return(!items||!items.length)?"":items.filter(Boolean).join("\n")}
 function formatSectorNameFirstToNumberFirst(value){const text=String(value||"").trim();const match=text.match(/^([A-Z]{2,4})\s+(\d{2})$/);return match?`${match[2]} ${match[1]}`:text}
 function splitSectorLines(items){return(!items||!items.length)?"":items.filter(Boolean).map(formatSectorNameFirstToNumberFirst).join("\n")}
@@ -98,8 +98,50 @@ function buildApproachDetails(apps,vscs,contacts,hours){
 
 function updateZuluClock(){document.getElementById("zuluClock").textContent=new Date().toISOString().slice(11,19)+"Z"}
 function scheduleClear(expectedIdent){if(clearTimer)clearTimeout(clearTimer);const expected=String(expectedIdent||"").trim().toUpperCase();clearTimer=setTimeout(()=>{const current=String(input.value||"").trim().toUpperCase();if(expected&&current!==expected)return;input.value="";input.focus()},1000)}
+function renderCombinedNavaidDisplay(navRecords){
+  const grid=document.querySelector(".grid");
+  const anchor=document.getElementById("airportNameCard");
+  if(!grid||!anchor||!Array.isArray(navRecords)||!navRecords.length)return;
+
+  let card=document.getElementById("combinedNavaidCard");
+  if(!card){
+    card=document.createElement("div");
+    card.id="combinedNavaidCard";
+    card.className="card";
+    card.style.gridColumn="1 / -1";
+    anchor.insertAdjacentElement("afterend",card);
+  }
+
+  const rows=navRecords.map(function(rec){
+    const name=String(rec.airport_name||rec.name||"NAVAID").trim();
+    const type=String(rec.facility_type||rec.record_type||rec.type||"NAVAID").trim();
+    const ident=String(rec.ident||rec.identifier||"").trim();
+    const freq=String(rec.frequency||rec.freq||"").trim();
+    const channel=String(rec.channel||rec.tacan_channel||"").trim();
+    const hours=Array.isArray(rec.hours)?rec.hours.filter(Boolean).join("\\n"):String(rec.hours||"").trim();
+    const details=[
+      ident ? "Identifier: "+ident : "",
+      type ? "Type: "+type : "",
+      freq ? "Frequency: "+freq : "",
+      channel ? "Channel: "+channel : "",
+      hours ? "Hours: "+hours : ""
+    ].filter(Boolean).join("\\n");
+    return "<div style=\"padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10);\">"+
+      "<div style=\"font-weight:800;color:var(--cyan);font-size:1rem;\">"+name+"</div>"+
+      (details?"<div class=\"card-value\" style=\"margin-top:5px;white-space:pre-line;\">"+details+"</div>":"")+
+      "</div>";
+  }).join("");
+
+  card.innerHTML="<div class=\"card-title\">ASSOCIATED NAVAID / WAYPOINT</div>"+rows;
+}
+function clearCombinedNavaidDisplay(){
+  const card=document.getElementById("combinedNavaidCard");
+  if(card)card.remove();
+}
+window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY=clearCombinedNavaidDisplay;
 function updateResults(){
   if(window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY){window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY();}
+  if(window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY){window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY();}
   if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
   const raw=input.value,upper=raw.toUpperCase();
   if(raw!==upper)input.value=upper;
@@ -122,19 +164,13 @@ function updateResults(){
   if(!query)return;
 
   const rec=records[query];
+  const navRecords = window.ZFW_GET_NAV_RECORDS_FOR_IDENT
+    ? window.ZFW_GET_NAV_RECORDS_FOR_IDENT(query)
+    : [];
 
-  // A 4-character K-prefixed entry (for example KIAB) is the ICAO form
-  // of a 3-character Non-ZFW airport identifier (IAB). Give the adjacent
-  // ARTCC lookup the first chance to resolve it when no local ZFW airport
-  // record exists.
-  if(!rec && /^K[A-Z0-9]{3}$/.test(query) && window.applyAdjacentAirportLookup){
-    if(window.applyAdjacentAirportLookup(query)){
-      scheduleClear(typed);
-      return;
-    }
-  }
-
-  if(!rec){
+  // An identifier can legitimately represent both an airport and a navaid.
+  // Keep both records and render them together instead of forcing one to win.
+  if(!rec && (!navRecords || !navRecords.length)){
     if(window.applyAdjacentAirportLookup && window.applyAdjacentAirportLookup(upper)){
       scheduleClear(typed);
       return;
@@ -152,8 +188,19 @@ function updateResults(){
     return;
   }
 
+  if(!rec && navRecords && navRecords.length){
+    if(window.ZFW_LOOKUP_WAYPOINT && window.ZFW_LOOKUP_WAYPOINT(query)){
+      scheduleClear(typed);
+      return;
+    }
+  }
+
   if(window.clearAdjacentAirportDisplayState){
     window.clearAdjacentAirportDisplayState();
+  }
+
+  if(window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY){
+    window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY();
   }
 
   clearClasses();
@@ -184,6 +231,10 @@ function updateResults(){
   setText("airportName",rec.airport_name||"Name not found");
 
   els.airportName.classList.add("cyan-text");
+
+  if(navRecords && navRecords.length){
+    renderCombinedNavaidDisplay(navRecords);
+  }
 
   // AREA color association intentionally removed to reduce visual clutter.
 
