@@ -627,23 +627,9 @@
     mergeNavData();
 
     const input = document.getElementById("airportInput");
-    if(input) ["input","change","keyup","blur"].forEach(evt => input.addEventListener(evt, scheduleUpdate));
+    // Nearest WX is updated by the unified ENTER-only lookup in app.js.
 
-    setInterval(() => {
-      const input = document.getElementById("airportInput");
-      const output = document.getElementById("nearestWeather");
-      if(!input || !output) return;
-      const typedIdent = normalizeIdent(input.value);
-      const outText = normalizeIdent(output.textContent);
-      if(typedIdent) updateNearestWeather();
-      else {
-        if(lastDisplayedWx && (!outText || outText === "—")) restoreLast(output);
-        if(lastFoundWasNav && statusLooksBad()) forceStatus((lastLookupIdent || "SEARCH") + " found");
-        if(lastFoundWasNav) clearAirportOutputsForNav(lastFoundRecord);
-      }
-    }, 250);
-
-    scheduleUpdate();
+    // Unified lookup performs weather updates only after ENTER.
   }
 
 
@@ -750,6 +736,7 @@
   }
 
   function installWaypointLookupBox(){
+    return;
     if(document.getElementById("waypointInput")) return;
     const airport=document.getElementById("airportInput");
     if(!airport || !airport.parentElement) return;
@@ -820,6 +807,30 @@
   window.ZFW_UPDATE_NEAREST_WX_FOR_IDENT = updateNearestWeatherForIdent;
   window.ZFW_MERGE_NAV_DATA = mergeNavData;
   window.ZFW_LOOKUP_WAYPOINT = lookupWaypoint;
+  window.ZFW_GET_NAV_RECORDS_FOR_IDENT = function(identifier){
+    const typed = normalizeIdent(identifier);
+    if(!typed) return [];
+    const base = (typed.length === 4 && typed.startsWith("K")) ? typed.slice(1) : typed;
+    const navData = sourceNavData();
+    const found = [];
+    const seen = new Set();
+
+    [typed, base, base.length === 3 ? "K" + base : ""].filter(Boolean).forEach(function(key){
+      const source = navData[key];
+      if(!source) return;
+      const rec = normalizeNavRecord(base, source);
+      const sig = [rec.record_type||rec.type||"", rec.facility_type||"", rec.airport_name||rec.name||"", rec.lat||"", rec.lon||""].join("|").toUpperCase();
+      if(!seen.has(sig)){ seen.add(sig); rec._lookupIdent = base; found.push(rec); }
+    });
+
+    const merged = ensureAirportData()[base];
+    if(merged && isNavType(merged)){
+      const sig = [merged.record_type||merged.type||"", merged.facility_type||"", merged.airport_name||merged.name||"", merged.lat||"", merged.lon||""].join("|").toUpperCase();
+      if(!seen.has(sig)){ seen.add(sig); const rec=clone(merged); rec._lookupIdent=base; found.push(rec); }
+    }
+
+    return found;
+  };
   installWaypointLookupBox();
   setTimeout(installWaypointLookupBox, 250);
   setTimeout(installWaypointLookupBox, 1000);
