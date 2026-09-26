@@ -424,11 +424,16 @@
     });
 
     const nameEl = document.getElementById("airportName");
+    const nameCard = document.getElementById("airportNameCard");
     if(nameEl){
       nameEl.textContent = navDisplayName(record, lastLookupIdent || "NAVAID");
       nameEl.classList.remove("red-text", "green-text", "amber-text");
       nameEl.classList.add("cyan-text");
     }
+    // NAVAID/waypoint-only results do not have an Airport Name or Associated NAVAID section.
+    if(nameCard) nameCard.style.display = "none";
+    const combinedNavaidCard = document.getElementById("combinedNavaidCard");
+    if(combinedNavaidCard) combinedNavaidCard.remove();
 
     // A navaid/waypoint result must never retain facility details from a prior airport lookup.
     ["approach","vscs","contact","hours"].forEach(function(id){
