@@ -103,6 +103,45 @@ function renderCombinedNavaidDisplay(navRecords){
   const anchor=document.getElementById("airportNameCard");
   if(!grid||!anchor||!Array.isArray(navRecords)||!navRecords.length)return;
 
+  // VOTs remain in the underlying data, but they are not treated as an
+  // Associated NAVAID in the main airport display.
+  const displayNavRecords=navRecords.filter(function(rec){
+    const rawType=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
+    const rawName=String(rec.airport_name||rec.name||"").trim().toUpperCase();
+    return rawType!=="VOT" && !/\\sVOT\\s*$/.test(rawName);
+  });
+
+  // Keep VOT information compact: show it only as a small indicator in
+  // the existing Nearest WX card instead of creating a large card.
+  const nearestCard=document.getElementById("nearestWeatherCard");
+  if(nearestCard){
+    const oldVot=nearestCard.querySelector("#votPresentIndicator");
+    if(oldVot)oldVot.remove();
+
+    const hasVot=navRecords.some(function(rec){
+      const rawType=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
+      const rawName=String(rec.airport_name||rec.name||"").trim().toUpperCase();
+      return rawType==="VOT" || /\\sVOT\\s*$/.test(rawName);
+    });
+
+    if(hasVot){
+      const title=nearestCard.querySelector(".card-title");
+      if(title){
+        const indicator=document.createElement("span");
+        indicator.id="votPresentIndicator";
+        indicator.textContent="VOT: YES";
+        indicator.style.marginLeft="14px";
+        indicator.style.fontSize=".72rem";
+        indicator.style.fontWeight="700";
+        indicator.style.opacity=".8";
+        title.appendChild(indicator);
+      }
+    }
+  }
+
+  // If the only associated facility was a VOT, do not create an empty card.
+  if(!displayNavRecords.length)return;
+
   let card=document.getElementById("combinedNavaidCard");
   if(!card){
     card=document.createElement("div");
@@ -111,15 +150,6 @@ function renderCombinedNavaidDisplay(navRecords){
     card.style.gridColumn="1 / -1";
     anchor.insertAdjacentElement("afterend",card);
   }
-
-  // VOTs are retained in the underlying data, but they are not treated as
-  // an Associated NAVAID in this application's airport display.
-  const displayNavRecords=navRecords.filter(function(rec){
-    const rawType=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
-    const rawName=String(rec.airport_name||rec.name||"").trim().toUpperCase();
-    return rawType!=="VOT" && !/\\sVOT\\s*$/.test(rawName);
-  });
-  if(!displayNavRecords.length)return;
 
   const rows=displayNavRecords.map(function(rec){
     let name=String(rec.airport_name||rec.name||"").trim();
@@ -135,7 +165,8 @@ function renderCombinedNavaidDisplay(navRecords){
     }
 
     if(type==="VOR-DME"||type==="VORDME") type="VOR/DME";
-    // Do not display the generic NAVAID label as a facility type.\n    if(type==="NAVAID") type="";
+    // Do not display the generic NAVAID label as a facility type.
+    if(type==="NAVAID") type="";
 
     const ident=String(rec.ident||rec.identifier||"").trim();
     const freq=String(rec.frequency||rec.freq||"").trim();
@@ -148,13 +179,13 @@ function renderCombinedNavaidDisplay(navRecords){
       channel ? "Channel: "+channel : "",
       hours ? "Hours: "+hours : ""
     ].filter(Boolean).join("\\n");
-    return "<div style=\"padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10);\">"+
-      "<div style=\"font-weight:800;color:var(--cyan);font-size:1rem;\">"+name+"</div>"+
-      (details?"<div class=\"card-value\" style=\"margin-top:5px;white-space:pre-line;\">"+details+"</div>":"")+
+    return "<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10);">"+
+      "<div style="font-weight:800;color:var(--cyan);font-size:1rem;">"+name+"</div>"+
+      (details?"<div class="card-value" style="margin-top:5px;white-space:pre-line;">"+details+"</div>":"")+
       "</div>";
   }).join("");
 
-  card.innerHTML="<div class=\"card-title\">ASSOCIATED NAVAID</div>"+rows;
+  card.innerHTML="<div class="card-title">ASSOCIATED NAVAID</div>"+rows;
 }
 function clearCombinedNavaidDisplay(){
   const card=document.getElementById("combinedNavaidCard");
