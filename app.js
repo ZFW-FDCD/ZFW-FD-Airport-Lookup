@@ -112,7 +112,16 @@ function renderCombinedNavaidDisplay(navRecords){
     anchor.insertAdjacentElement("afterend",card);
   }
 
-  const rows=navRecords.map(function(rec){
+  // VOTs are retained in the underlying data, but they are not treated as
+  // an Associated NAVAID in this application's airport display.
+  const displayNavRecords=navRecords.filter(function(rec){
+    const rawType=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
+    const rawName=String(rec.airport_name||rec.name||"").trim().toUpperCase();
+    return rawType!=="VOT" && !/\\sVOT\\s*$/.test(rawName);
+  });
+  if(!displayNavRecords.length)return;
+
+  const rows=displayNavRecords.map(function(rec){
     let name=String(rec.airport_name||rec.name||"").trim();
     let type=String(rec.facility_type||rec.record_type||rec.type||"").trim().toUpperCase();
 
