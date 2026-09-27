@@ -179,13 +179,13 @@ function renderCombinedNavaidDisplay(navRecords){
       channel ? "Channel: "+channel : "",
       hours ? "Hours: "+hours : ""
     ].filter(Boolean).join("\\n");
-    return "<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10);">"+
-      "<div style="font-weight:800;color:var(--cyan);font-size:1rem;">"+name+"</div>"+
-      (details?"<div class="card-value" style="margin-top:5px;white-space:pre-line;">"+details+"</div>":"")+
-      "</div>";
+    return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.10);">'+
+      '<div style="font-weight:800;color:var(--cyan);font-size:1rem;">'+name+'</div>'+
+      (details?'<div class="card-value" style="margin-top:5px;white-space:pre-line;">'+details+'</div>':'')+
+      '</div>';
   }).join("");
 
-  card.innerHTML="<div class="card-title">ASSOCIATED NAVAID</div>"+rows;
+  card.innerHTML='<div class="card-title">ASSOCIATED NAVAID</div>'+rows;
 }
 function clearCombinedNavaidDisplay(){
   const card=document.getElementById("combinedNavaidCard");
