@@ -190,6 +190,8 @@ function renderCombinedNavaidDisplay(navRecords){
 function clearCombinedNavaidDisplay(){
   const card=document.getElementById("combinedNavaidCard");
   if(card)card.remove();
+  const votIndicator=document.getElementById("votPresentIndicator");
+  if(votIndicator)votIndicator.remove();
 }
 window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY=clearCombinedNavaidDisplay;
 function updateResults(){
