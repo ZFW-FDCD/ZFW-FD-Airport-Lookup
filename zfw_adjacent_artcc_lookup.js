@@ -280,9 +280,8 @@
   }
 
   function clearMapForAdjacent(){
-    if(typeof window.ZFW_CLEAR_CURRENT_MARKER === "function"){
-      window.ZFW_CLEAR_CURRENT_MARKER();
-      return;
+    if(typeof window.currentMarker !== "undefined"){
+      window.currentMarker = null;
     }
 
     if(typeof window.drawMap === "function"){
