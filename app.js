@@ -424,7 +424,7 @@ function drawMap() {
   }
 }
 
-// Explicit ENTER-only search trigger. Typing never invokes updateResults().
+window.ZFW_CLEAR_CURRENT_MARKER=function(){\n  currentMarker=null;\n  drawMap();\n};\n\n// Explicit ENTER-only search trigger. Typing never invokes updateResults().
 input.addEventListener("keydown",function(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
