@@ -294,6 +294,7 @@ function updateResults(){
   setText("contact",contactValue);
   setText("hours",splitLines(hours));
   setText("airportName",rec.airport_name||"Name not found");
+      if(cards.airportName)cards.airportName.style.display="";
 
   els.airportName.classList.add("cyan-text");
 
