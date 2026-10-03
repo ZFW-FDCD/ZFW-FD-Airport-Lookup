@@ -218,7 +218,11 @@ function updateResults(){
   const query=normalizeSearch(upper);
   if(!query)return;
 
-  const rec=records[query];
+  // Always read the current airport record store at lookup time. Shared/manual
+  // airport records can be loaded after app.js starts, so do not rely on the
+  // startup snapshot captured in `records` for the actual search.
+  const liveRecords=(window.AIRPORT_DATA&&window.AIRPORT_DATA.records)||{};
+  const rec=liveRecords[query];
   const navRecords = window.ZFW_GET_NAV_RECORDS_FOR_IDENT
     ? window.ZFW_GET_NAV_RECORDS_FOR_IDENT(query)
     : [];
