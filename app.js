@@ -14,6 +14,18 @@ const els={sector:document.getElementById("sector"),area:document.getElementById
 const cards={sector:document.getElementById("sectorCard"),area:document.getElementById("areaCard"),approach:document.getElementById("approachCard"),vscs:document.getElementById("vscsCard"),contact:document.getElementById("contactCard"),hours:document.getElementById("hoursCard"),airportName:document.getElementById("airportNameCard")};
 function normalizeSearch(v){return String(v||"").trim().toUpperCase()}
 function isCompleteLookupInput(v){const s=String(v||"").trim().toUpperCase();return /^[A-Z0-9]{2,5}$/.test(s)}
+function hasThreeCharacterLookupCandidate(value){
+  const query=normalizeSearch(value);
+  if(!/^[A-Z0-9]{3}$/.test(query))return false;
+
+  const liveRecords=(window.AIRPORT_DATA&&window.AIRPORT_DATA.records)||{};
+  if(liveRecords[query])return true;
+
+  const navRecords=window.ZFW_GET_NAV_RECORDS_FOR_IDENT
+    ? window.ZFW_GET_NAV_RECORDS_FOR_IDENT(query)
+    : [];
+  return !!(navRecords&&navRecords.length);
+}
 function splitLines(items){return(!items||!items.length)?"":items.filter(Boolean).join("\n")}
 function formatSectorNameFirstToNumberFirst(value){const text=String(value||"").trim();const match=text.match(/^([A-Z]{2,4})\s+(\d{2})$/);return match?`${match[2]} ${match[1]}`:text}
 function splitSectorLines(items){return(!items||!items.length)?"":items.filter(Boolean).map(formatSectorNameFirstToNumberFirst).join("\n")}
@@ -430,6 +442,21 @@ function drawMap() {
 }
 
 // Explicit ENTER-only search trigger. Typing never invokes updateResults().
+input.addEventListener("input",function(e){
+  const value=String(input.value||"").toUpperCase();
+  if(input.value!==value)input.value=value;
+
+  const typed=value.trim();
+  if(typed.length<3)return;
+  if(!/^[A-Z0-9]{3,5}$/.test(typed))return;
+
+  // Three-character searches are allowed when they resolve to a real
+  // airport/navaid. If they do not resolve, keep the field active so a
+  // four-character identifier such as TA24, TX25, or 0TX1 can be completed.
+  if(typed.length===3 && !hasThreeCharacterLookupCandidate(typed))return;
+
+  updateResults();
+});
 input.addEventListener("keydown",function(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
