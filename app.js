@@ -19,6 +19,14 @@ function hasThreeCharacterLookupCandidate(value){
   if(!/^[A-Z0-9]{3}$/.test(query))return false;
 
   const liveRecords=(window.AIRPORT_DATA&&window.AIRPORT_DATA.records)||{};
+
+  // If a 4-character airport begins with this 3-character value, wait for
+  // the fourth character. Enter remains the explicit override.
+  const hasLongerAirport=Object.keys(liveRecords).some(function(ident){
+    return ident.length===4 && ident.startsWith(query);
+  });
+  if(hasLongerAirport)return false;
+
   if(liveRecords[query])return true;
 
   const navRecords=window.ZFW_GET_NAV_RECORDS_FOR_IDENT
@@ -441,7 +449,9 @@ function drawMap() {
   }
 }
 
-// Explicit ENTER-only search trigger. Typing never invokes updateResults().
+// Smart live search: resolve completed identifiers automatically,
+// but wait at three characters when a 4-character airport may follow.
+// ENTER always forces an exact lookup of the current entry.
 input.addEventListener("input",function(e){
   const value=String(input.value||"").toUpperCase();
   if(input.value!==value)input.value=value;
@@ -450,17 +460,23 @@ input.addEventListener("input",function(e){
   if(typed.length<3)return;
   if(!/^[A-Z0-9]{3,5}$/.test(typed))return;
 
-  // Three-character searches are allowed when they resolve to a real
-  // airport/navaid. If they do not resolve, keep the field active so a
-  // four-character identifier such as TA24, TX25, or 0TX1 can be completed.
   if(typed.length===3 && !hasThreeCharacterLookupCandidate(typed))return;
 
+  // Airports are 3 or 4 characters; 5-character entries are reserved for
+  // waypoint/NAVAID lookup. At 4 or 5 characters, search immediately.
   updateResults();
 });
 input.addEventListener("keydown",function(e){
   if(e.key !== "Enter") return;
   e.preventDefault();
   e.stopPropagation();
+
+  // ENTER is the user's explicit override: search exactly what is entered,
+  // even when the automatic 3-character logic is waiting for a fourth
+  // character.
+  const typed=String(input.value||"").trim().toUpperCase();
+  if(!/^[A-Z0-9]{3,5}$/.test(typed))return;
+
   updateResults();
   input.select();
 });window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
