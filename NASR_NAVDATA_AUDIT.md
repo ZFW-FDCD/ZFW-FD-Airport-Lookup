@@ -1,10 +1,10 @@
 # ZFW NASR Navdata Audit
 
-Cycle page: https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-10-01
-Generated navpoint records: 10332
+Cycle page: https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/2026-10-29
+Generated navpoint records: 10314
 Generated weather stations: 0
-Generated adjacent ARTCC airports: 5019
-Records missing nearest_wx: 10044
+Generated adjacent ARTCC airports: 5022
+Records missing nearest_wx: 10026
 
 ## Sample required checks
 - WSTEX: FOUND, nearest_wx=, name=WSTEX WAYPOINT
