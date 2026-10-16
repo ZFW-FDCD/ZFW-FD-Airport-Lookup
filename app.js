@@ -214,7 +214,14 @@ function clearCombinedNavaidDisplay(){
   if(votIndicator)votIndicator.remove();
 }
 window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY=clearCombinedNavaidDisplay;
-function updateResults(){
+function updateResults(forceExact){
+  // Central safeguard: do not process a 3-character prefix when a 4-character
+  // airport identifier extends it. Enter passes forceExact=true to override.
+  const initialTyped=normalizeSearch(input.value);
+  if(!forceExact && initialTyped.length===3 && Object.keys((window.AIRPORT_DATA&&window.AIRPORT_DATA.records)||{}).some(function(ident){
+    return ident.length===4 && ident.startsWith(initialTyped);
+  }))return;
+
   if(window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY){window.ZFW_CLEAR_PREVIOUS_LOOKUP_DISPLAY();}
   if(window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY){window.ZFW_CLEAR_COMBINED_NAVAID_DISPLAY();}
   if(clearTimer){clearTimeout(clearTimer);clearTimer=null;}
@@ -477,6 +484,6 @@ input.addEventListener("keydown",function(e){
   const typed=String(input.value||"").trim().toUpperCase();
   if(!/^[A-Z0-9]{3,5}$/.test(typed))return;
 
-  updateResults();
+  updateResults(true);
   input.select();
 });window.addEventListener("resize",drawMap);setInterval(updateZuluClock,1000);updateZuluClock();statusEl.textContent=`${Object.keys(records).length} AIRPORTS LOADED`;drawMap();input.focus();
