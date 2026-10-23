@@ -456,11 +456,14 @@ function drawMap() {
   }
 }
 
-// Capture-phase guard: prevent any other input listener from treating an ambiguous
-// 3-character airport prefix as a completed lookup. The normal handler below
-// resumes as soon as a fourth character is entered. Enter remains unaffected.
-input.addEventListener("input", function(e) {
-  const typed = normalizeSearch(input.value);
+// Document-level capture guard: stop ambiguous 3-character airport prefixes
+// before the event reaches any handler attached directly to the main airport
+// input. This prevents competing lookup listeners from processing the prefix.
+// The fourth character and Enter-to-force-exact behavior remain unaffected.
+document.addEventListener("input", function(e) {
+  const target = e.target;
+  if (!target || target.id !== "airportInput") return;
+  const typed = normalizeSearch(target.value);
   if (typed.length !== 3 || !/^[A-Z0-9]{3}$/.test(typed)) return;
   const liveRecords = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
   const hasFourCharacterExtension = Object.keys(liveRecords).some(function(ident) {
@@ -468,6 +471,7 @@ input.addEventListener("input", function(e) {
   });
   if (hasFourCharacterExtension) {
     e.stopImmediatePropagation();
+    e.stopPropagation();
   }
 }, true);
 
