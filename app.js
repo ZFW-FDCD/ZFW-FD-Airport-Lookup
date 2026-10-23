@@ -456,6 +456,21 @@ function drawMap() {
   }
 }
 
+// Capture-phase guard: prevent any other input listener from treating an ambiguous
+// 3-character airport prefix as a completed lookup. The normal handler below
+// resumes as soon as a fourth character is entered. Enter remains unaffected.
+input.addEventListener("input", function(e) {
+  const typed = normalizeSearch(input.value);
+  if (typed.length !== 3 || !/^[A-Z0-9]{3}$/.test(typed)) return;
+  const liveRecords = (window.AIRPORT_DATA && window.AIRPORT_DATA.records) || {};
+  const hasFourCharacterExtension = Object.keys(liveRecords).some(function(ident) {
+    return ident.length === 4 && ident.startsWith(typed);
+  });
+  if (hasFourCharacterExtension) {
+    e.stopImmediatePropagation();
+  }
+}, true);
+
 // Smart live search: resolve completed identifiers automatically,
 // but wait at three characters when a 4-character airport may follow.
 // ENTER always forces an exact lookup of the current entry.
